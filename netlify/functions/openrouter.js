@@ -101,6 +101,21 @@ export default async function handler(request) {
         temperature = 0.7;
     }
 
+    /*
+     * OpenRouter attributes traffic by this header. When the variable is not
+     * set the function's own origin is used, which is right on the deployed
+     * site and right under `netlify dev`, rather than reporting production
+     * traffic as localhost because nobody set an optional variable.
+     */
+    let referer = process.env.OPENROUTER_APP_URL;
+    if (!referer) {
+        try {
+            referer = new URL(request.url).origin;
+        } catch (error) {
+            referer = "http://localhost:8888";
+        }
+    }
+
     const startedAt = Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(function () {
@@ -115,7 +130,7 @@ export default async function handler(request) {
             headers: {
                 Authorization: "Bearer " + apiKey,
                 "Content-Type": "application/json",
-                "HTTP-Referer": process.env.OPENROUTER_APP_URL || "http://localhost:8888",
+                "HTTP-Referer": referer,
                 "X-Title": process.env.OPENROUTER_APP_TITLE || "Tribunal"
             },
             body: JSON.stringify({
