@@ -1,9 +1,10 @@
 # The problem
 
-Module 6's four deliverables. Written after the build rather than before it,
-which is the wrong order and is recorded here as a fact rather than hidden.
-What follows is what the project turned out to be for, tested against M6's own
-four tests.
+Module 6's four deliverables, written from the built system. Module 10 is
+explicit that this is what to do once code exists — keep the specification
+after it, and rewrite the specification before rewriting code — so this is the
+artefact from here forward. Each deliverable is tested against M6's own test
+for it.
 
 ---
 
@@ -27,14 +28,15 @@ problem admits.
 |---|---|
 | **The person putting the case** | To see disagreement, not a summary. To be told when the panel failed rather than shown a default. |
 | **The course instructor** | To open the repository and verify how the agent was directed — not to be told about it. |
-| **The three of us building it** | A boundary each person can work inside without colliding. |
+| **The two of us building it** | A boundary each person can work inside without colliding. |
 | **The model providers (OpenRouter and its upstreams)** | Not to be exceeded: rate limits respected, calls capped, no runaway loop. |
 | **The named judges, and the estates of the deceased among them** | Not to be impersonated or to have decisions predicted for them. Two of the three are real public figures. The prompts adapt a published method and say so, in the prompt itself. |
 | **Whoever maintains this after us** | Documents that explain the *why*, since the reasons will not survive in chat logs. |
 
 **Test — nobody should discover themselves on the list too late.** The last two
-rows were added late, and that is exactly the failure the test names. The judge
-row changed the prompts; the maintainer row is why `docs/` exists at all.
+rows are the ones this test earned. The judge row changed the prompts, which
+now state that they adapt a published method and do not impersonate anyone; the
+maintainer row is why `docs/` exists at all.
 
 ## 3. Definition of done
 
