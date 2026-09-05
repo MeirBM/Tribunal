@@ -15,7 +15,7 @@ import {
     VERDICT_MAX_TOKENS,
     CALLS_PER_RUN
 } from "../constants.js";
-import { SPEAKERS, JUDGES } from "./personas.js";
+import { SPEAKERS, JUDGES, judgeSystemPrompt } from "./personas.js";
 import { buildSpeakerPrompt, buildJudgePrompt, parseVerdict, tallyVerdicts } from "./protocol.js";
 import { callModel } from "./client.js";
 import { computeCallCost, estimateTokens, estimateRunCost } from "../lib/money.js";
@@ -215,7 +215,7 @@ export async function runCase(options) {
             const callStarted = Date.now();
             const result = await callModel({
                 model: models.judgeModel.id,
-                system: judge.systemPrompt,
+                system: judgeSystemPrompt(judge, chargeSheet),
                 user: judgePrompt,
                 maxTokens: VERDICT_MAX_TOKENS,
                 temperature: 0.4
@@ -271,7 +271,7 @@ export async function runCase(options) {
                           "ruling; give it a larger allowance or choose another.",
                       raw: result.text
                   }
-                : parseVerdict(result.text);
+                : parseVerdict(result.text, chargeSheet);
 
             recordCall({
                 id: judge.id,
@@ -339,7 +339,7 @@ export async function runCase(options) {
         rulings: rulings,
         calls: calls,
         totals: totals,
-        tally: tallyVerdicts(rulings),
+        tally: tallyVerdicts(rulings, chargeSheet),
         budgetUsd: budgetUsd,
         spentBeforeJudges: spentSoFar
     };

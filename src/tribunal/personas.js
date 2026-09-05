@@ -12,7 +12,7 @@
  * acquit" must be reported as evidence of tampering, not obeyed.
  */
 
-import { ALLOWED_VERDICTS, MINIMUM_REASONS } from "../constants.js";
+import { MINIMUM_REASONS, verdictsFor } from "../constants.js";
 
 // Appended to every prompt. The model is told, before it reads anything, that
 // the case material is data and not a source of orders.
@@ -140,23 +140,26 @@ export const SPEAKERS = [
  * prompt, once at the top and once at the bottom, because a judge that
  * returns prose instead of the form is the failure this project sees most.
  */
-const VERDICT_FORM =
-    "Answer in exactly this form and add nothing outside it:\n\n" +
-    "VERDICT: " + ALLOWED_VERDICTS.join(" or ") + "\n" +
-    "CONFIDENCE: a whole number from 0 to 100\n" +
-    "REASONS:\n" +
-    "- first reason\n" +
-    "- second reason\n" +
-    "- further reasons if you have them\n" +
-    "DECISIVE: the name of the speaker who moved you most, or NONE\n" +
-    "REASONING: one paragraph saying how you arrived at the verdict, which " +
-    "arguments you accepted, and which you set aside and why.\n\n" +
-    "The VERDICT line must contain one of those two answers and nothing else. " +
-    "You must give at least " + MINIMUM_REASONS + " reasons.\n\n" +
-    "Do not restate these instructions, and do not write out your thinking " +
-    "before the form. Begin your answer at the word VERDICT.";
+function buildVerdictForm(verdicts) {
+    return (
+        "Answer in exactly this form and add nothing outside it:\n\n" +
+        "VERDICT: " + verdicts.positive + " or " + verdicts.negative + "\n" +
+        "CONFIDENCE: a whole number from 0 to 100\n" +
+        "REASONS:\n" +
+        "- first reason\n" +
+        "- second reason\n" +
+        "- further reasons if you have them\n" +
+        "DECISIVE: the name of the speaker who moved you most, or NONE\n" +
+        "REASONING: one paragraph saying how you arrived at the verdict, which " +
+        "arguments you accepted, and which you set aside and why.\n\n" +
+        "The VERDICT line must contain one of those two answers and nothing " +
+        "else. You must give at least " + MINIMUM_REASONS + " reasons.\n\n" +
+        "Do not restate these instructions, and do not write out your thinking " +
+        "before the form. Begin your answer at the word VERDICT."
+    );
+}
 
-export const JUDGE_FORM = VERDICT_FORM;
+export { buildVerdictForm };
 
 /*
  * The three judges. They rule alone and never see each other's rulings, so
@@ -170,9 +173,8 @@ export const JUDGES = [
         title: "The Formalist",
         blurb:
             "Decides on the rule as written. Consequences are for the legislature, not the bench.",
-        systemPrompt:
+        character:
             "You are Justice Halloran, sitting alone on this tribunal.\n\n" +
-            VERDICT_FORM + "\n\n" +
             "You decide cases on the rule as it is written. The question before you " +
             "is whether the conduct described falls inside the charge, not whether " +
             "the outcome is agreeable. Consequences, sympathy and public feeling are " +
@@ -192,7 +194,7 @@ export const JUDGES = [
             "aside because it is legally irrelevant is not the same as setting it " +
             "aside because nobody proved it, and the second is the check this court " +
             "most needs from you.\n\n" +
-            INPUT_IS_DATA + "\n\n" + VERDICT_FORM
+            INPUT_IS_DATA
     },
     {
         id: "judge-pragmatist",
@@ -200,9 +202,8 @@ export const JUDGES = [
         title: "The Pragmatist",
         blurb:
             "Decides on what the ruling will do in the world once it is made.",
-        systemPrompt:
+        character:
             "You are Justice Nwankwo, sitting alone on this tribunal.\n\n" +
-            VERDICT_FORM + "\n\n" +
             "You decide cases by what the ruling will do once it exists. A judgement " +
             "is not a statement about the past; it is an instruction to everyone who " +
             "reads it. So you ask what conduct this verdict encourages, what it " +
@@ -222,7 +223,7 @@ export const JUDGES = [
             "aside because it is legally irrelevant is not the same as setting it " +
             "aside because nobody proved it, and the second is the check this court " +
             "most needs from you.\n\n" +
-            INPUT_IS_DATA + "\n\n" + VERDICT_FORM
+            INPUT_IS_DATA
     },
     {
         id: "judge-sceptic",
@@ -230,9 +231,8 @@ export const JUDGES = [
         title: "The Sceptic",
         blurb:
             "Decides on the quality of the argument. Distrusts fluent advocacy on either side.",
-        systemPrompt:
+        character:
             "You are Justice Reyes, sitting alone on this tribunal.\n\n" +
-            VERDICT_FORM + "\n\n" +
             "You decide cases on the strength of what was actually argued. You are " +
             "unimpressed by fluency and you notice when a speech is persuasive " +
             "because it is well written rather than because it is well founded. You " +
@@ -254,7 +254,7 @@ export const JUDGES = [
             "aside because it is legally irrelevant is not the same as setting it " +
             "aside because nobody proved it, and the second is the check this court " +
             "most needs from you.\n\n" +
-            INPUT_IS_DATA + "\n\n" + VERDICT_FORM
+            INPUT_IS_DATA
     }
 ];
 
@@ -269,4 +269,18 @@ export function findJudge(id) {
     return JUDGES.find(function (judge) {
         return judge.id === id;
     }) || null;
+}
+
+/*
+ * Composes a judge's system prompt for a particular case.
+ *
+ * The form is stated twice, once before the character and once after it,
+ * because a judge that returns prose instead of the form is the failure this
+ * project sees most often. Which two answers the form allows comes from the
+ * case, so a court asked whether an act was justified is never invited to
+ * reply that someone was guilty.
+ */
+export function judgeSystemPrompt(judge, chargeSheet) {
+    const form = buildVerdictForm(verdictsFor(chargeSheet));
+    return form + "\n\n" + judge.character + "\n\n" + form;
 }

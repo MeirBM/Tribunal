@@ -77,9 +77,13 @@ export function renderProtocolText(run) {
     lines.push("THE COUNT");
     lines.push(
         run.tally.guilty +
-            " guilty, " +
+            " " +
+            (run.tally.positiveWord || "guilty").toLowerCase() +
+            ", " +
             run.tally.notGuilty +
-            " not guilty, " +
+            " " +
+            (run.tally.negativeWord || "not guilty").toLowerCase() +
+            ", " +
             run.tally.failed +
             " seat(s) empty. The verdicts are not merged."
     );

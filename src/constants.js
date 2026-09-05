@@ -49,11 +49,27 @@ export const SPEECH_MAX_TOKENS = 1200;
  */
 export const VERDICT_MAX_TOKENS = 1600;
 
-// The two answers a judge is allowed to return. Anything else is a malformed
-// answer, and a malformed answer is a failure, never a verdict.
-export const VERDICT_GUILTY = "GUILTY";
-export const VERDICT_NOT_GUILTY = "NOT GUILTY";
-export const ALLOWED_VERDICTS = [VERDICT_GUILTY, VERDICT_NOT_GUILTY];
+/*
+ * The two answers a judge is allowed to return. Anything else is a malformed
+ * answer, and a malformed answer is a failure, never a verdict.
+ *
+ * Which pair applies belongs to the case rather than to the program. A charge
+ * of unlawful disclosure asks whether the accused is guilty; the Tribunal's
+ * canonical case asks whether a killing was justified, and answering that one
+ * with "guilty" would be answering a different question from the one put.
+ */
+export const VERDICT_SETS = {
+    GUILT: { positive: "GUILTY", negative: "NOT GUILTY" },
+    JUSTIFICATION: { positive: "JUSTIFIED", negative: "NOT JUSTIFIED" }
+};
+
+export const DEFAULT_VERDICT_SET = "GUILT";
+
+// Resolves a charge sheet to the pair its question is actually asking for.
+export function verdictsFor(chargeSheet) {
+    const key = (chargeSheet && chargeSheet.verdictSet) || DEFAULT_VERDICT_SET;
+    return VERDICT_SETS[key] || VERDICT_SETS[DEFAULT_VERDICT_SET];
+}
 
 // A judge must give a verdict and at least this many reasons for it. Fewer
 // reasons is not a weaker verdict; it is a malformed answer.

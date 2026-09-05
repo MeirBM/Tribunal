@@ -118,7 +118,15 @@ function RunColumn(props) {
                 <Row label="Wall clock" value={formatDuration(record.totals.wallMs)} />
                 <Row
                     label="How it fell"
-                    value={record.tally.guilty + " guilty / " + record.tally.notGuilty + " not guilty"}
+                    value={
+                        record.tally.guilty +
+                        " " +
+                        (record.tally.positiveWord || "guilty").toLowerCase() +
+                        " / " +
+                        record.tally.notGuilty +
+                        " " +
+                        (record.tally.negativeWord || "not guilty").toLowerCase()
+                    }
                 />
                 <Row label="Divided" value={record.tally.split ? "yes" : "no"} />
             </CardContent>

@@ -8,12 +8,7 @@
  * writes a heading slightly differently has still ruled.
  */
 
-import {
-    ALLOWED_VERDICTS,
-    MINIMUM_REASONS,
-    VERDICT_GUILTY,
-    VERDICT_NOT_GUILTY
-} from "../constants.js";
+import { MINIMUM_REASONS, verdictsFor } from "../constants.js";
 
 /*
  * Removes anything from submitted text that could close one of the markers
@@ -87,18 +82,22 @@ export function buildJudgePrompt(chargeSheet, speeches) {
     return parts.join("\n");
 }
 
-// Finds the verdict word on the VERDICT line. "NOT GUILTY" is tested first,
-// because "NOT GUILTY" contains "GUILTY" and would otherwise read as guilty.
-function readVerdict(line) {
+/*
+ * Finds the verdict on the VERDICT line.
+ *
+ * The negative is always tested first, because it contains the positive as a
+ * substring - "NOT GUILTY" contains "GUILTY", "NOT JUSTIFIED" contains
+ * "JUSTIFIED" - and testing the other way round reads every acquittal as a
+ * conviction. That is the single most damaging parsing mistake available here.
+ */
+function readVerdict(line, verdicts) {
     const upper = line.toUpperCase();
-    if (upper.indexOf(VERDICT_NOT_GUILTY) !== -1) {
-        return VERDICT_NOT_GUILTY;
+    const stem = verdicts.positive;
+    if (new RegExp("\\bNOT[\\s-]*" + stem + "\\b").test(upper)) {
+        return verdicts.negative;
     }
-    if (/\bNOT[\s-]*GUILTY\b/.test(upper)) {
-        return VERDICT_NOT_GUILTY;
-    }
-    if (/\bGUILTY\b/.test(upper)) {
-        return VERDICT_GUILTY;
+    if (new RegExp("\\b" + stem + "\\b").test(upper)) {
+        return verdicts.positive;
     }
     return null;
 }
@@ -118,12 +117,14 @@ function readVerdict(line) {
  * starts thinking, and a parser that reads the restatement finds a verdict
  * that nobody reached.
  */
-const TEMPLATE_LINE = /GUILTY\s+or\s+NOT\s+GUILTY|NOT\s+GUILTY\s+or\s+GUILTY|a whole number from|the name of the speaker/i;
+const TEMPLATE_LINE =
+    /\b(NOT\s+)?(GUILTY|JUSTIFIED)\s+or\s+(NOT\s+)?(GUILTY|JUSTIFIED)\b|a whole number from|the name of the speaker/i;
 
 const PLACEHOLDER_REASON =
     /^(first|second|third)\s+reason$|^further reasons|^one paragraph saying/i;
 
-export function parseVerdict(text) {
+export function parseVerdict(text, chargeSheet) {
+    const verdicts = verdictsFor(chargeSheet);
     const raw = String(text || "");
     const allLines = raw.split(/\r?\n/);
 
@@ -172,7 +173,7 @@ export function parseVerdict(text) {
 
         const verdictMatch = /^\**\s*VERDICT\s*\**\s*[:\-]\s*(.+)$/i.exec(trimmed);
         if (verdictMatch) {
-            verdict = readVerdict(verdictMatch[1]);
+            verdict = readVerdict(verdictMatch[1], verdicts);
             section = "none";
             continue;
         }
@@ -232,7 +233,7 @@ export function parseVerdict(text) {
         const head = lines.slice(0, 3).filter(function (line) {
             return !TEMPLATE_LINE.test(line);
         });
-        verdict = readVerdict(head.join(" "));
+        verdict = readVerdict(head.join(" "), verdicts);
     }
 
     const reasoning = reasoningLines.join("\n").trim();
@@ -241,8 +242,10 @@ export function parseVerdict(text) {
         return {
             ok: false,
             problem:
-                "The answer carried no verdict. The form asks for one of " +
-                ALLOWED_VERDICTS.join(" or ") +
+                "The answer carried no verdict. The form asks for " +
+                verdicts.positive +
+                " or " +
+                verdicts.negative +
                 " on a VERDICT line, and none was found.",
             raw: raw
         };
@@ -283,18 +286,21 @@ export function parseVerdict(text) {
  * because the disagreement is the useful output of a panel and not a defect
  * in it.
  */
-export function tallyVerdicts(rulings) {
+export function tallyVerdicts(rulings, chargeSheet) {
+    const verdicts = verdictsFor(chargeSheet);
     const delivered = rulings.filter(function (ruling) {
         return ruling.ok;
     });
     const guilty = delivered.filter(function (ruling) {
-        return ruling.verdict === VERDICT_GUILTY;
+        return ruling.verdict === verdicts.positive;
     }).length;
     const notGuilty = delivered.length - guilty;
 
     return {
         delivered: delivered.length,
         failed: rulings.length - delivered.length,
+        positiveWord: verdicts.positive,
+        negativeWord: verdicts.negative,
         guilty: guilty,
         notGuilty: notGuilty,
         unanimous: delivered.length > 0 && (guilty === 0 || notGuilty === 0),

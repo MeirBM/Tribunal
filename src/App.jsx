@@ -31,7 +31,8 @@ import {
     CONFIG_SPLIT,
     DEFAULT_BUDGET_USD,
     DATABASE_NAME,
-    DATABASE_VERSION
+    DATABASE_VERSION,
+    DEFAULT_VERDICT_SET
 } from "./constants.js";
 import { loadModels, loadAccount } from "./tribunal/client.js";
 import { pickDefaultModels } from "./tribunal/modelChoice.js";
@@ -49,7 +50,7 @@ import CostPanel from "./components/CostPanel.jsx";
 import ComparePanel from "./components/ComparePanel.jsx";
 import HistoryPanel from "./components/HistoryPanel.jsx";
 
-const EMPTY_SHEET = { defendant: "", act: "", question: "" };
+const EMPTY_SHEET = { defendant: "", act: "", question: "", verdictSet: DEFAULT_VERDICT_SET };
 
 const TABS = ["The case", "The opinion", "The bill", "Compare", "Past cases"];
 

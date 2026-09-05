@@ -171,8 +171,9 @@ export default function VerdictsPanel(props) {
                     icon={false}
                 >
                     <Typography variant="body2">
-                        <strong>How the panel fell:</strong> {tally.guilty} guilty,{" "}
-                        {tally.notGuilty} not guilty
+                        <strong>How the panel fell:</strong> {tally.guilty}{" "}
+                        {(tally.positiveWord || "guilty").toLowerCase()}, {tally.notGuilty}{" "}
+                        {(tally.negativeWord || "not guilty").toLowerCase()}
                         {tally.failed > 0
                             ? ", " + tally.failed + " seat" + (tally.failed === 1 ? "" : "s") + " empty"
                             : ""}

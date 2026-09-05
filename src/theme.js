@@ -11,9 +11,16 @@ import { createTheme } from "@mui/material/styles";
 const GUILTY_RED = "#a03038";
 const NOT_GUILTY_GREEN = "#2f6b4f";
 
+/*
+ * The only colours in the application that carry meaning. Both verdict
+ * vocabularies are keyed here, so the colour follows the answer whichever
+ * question the case asked.
+ */
 export const VERDICT_COLORS = {
     GUILTY: GUILTY_RED,
     "NOT GUILTY": NOT_GUILTY_GREEN,
+    "NOT JUSTIFIED": GUILTY_RED,
+    JUSTIFIED: NOT_GUILTY_GREEN,
     FAILED: "#8a8f98"
 };
 
