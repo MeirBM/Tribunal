@@ -6,6 +6,7 @@
 // these, never in this bundle.
 export const CHAT_ENDPOINT = "/api/openrouter";
 export const MODELS_ENDPOINT = "/api/models";
+export const ACCOUNT_ENDPOINT = "/api/account";
 
 // The IndexedDB store that keeps past cases, so a case can be found again.
 export const DATABASE_NAME = "tribunaldb";

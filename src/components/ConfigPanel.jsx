@@ -34,6 +34,7 @@ import {
 } from "../constants.js";
 import { formatDuration } from "../lib/money.js";
 import BudgetScales from "./BudgetScales.jsx";
+import RequestQuota from "./RequestQuota.jsx";
 import ArrangementDiagram from "./ArrangementDiagram.jsx";
 import { pingModel } from "../tribunal/client.js";
 
@@ -270,6 +271,16 @@ export default function ConfigPanel(props) {
                     estimateUsd={estimate ? estimate.worstCaseUsd : 0}
                     onChange={props.onBudgetChange}
                     disabled={props.disabled}
+                />
+
+                <Divider sx={{ my: 2 }} />
+
+                <RequestQuota
+                    account={props.account}
+                    usingFreeModels={
+                        Boolean(props.speakerModel && props.speakerModel.isFree) &&
+                        (!isSplit || Boolean(props.judgeModel && props.judgeModel.isFree))
+                    }
                 />
             </CardContent>
         </Card>

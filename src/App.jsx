@@ -33,7 +33,7 @@ import {
     DATABASE_NAME,
     DATABASE_VERSION
 } from "./constants.js";
-import { loadModels } from "./tribunal/client.js";
+import { loadModels, loadAccount } from "./tribunal/client.js";
 import { pickDefaultModels } from "./tribunal/modelChoice.js";
 import { planRun, runCase } from "./tribunal/runCase.js";
 import { openCasesDB } from "./lib/casesDb.js";
@@ -61,6 +61,7 @@ export default function App() {
 
     const [models, setModels] = useState([]);
     const [catalogueError, setCatalogueError] = useState(null);
+    const [account, setAccount] = useState(null);
     const [speakerModel, setSpeakerModel] = useState(null);
     const [judgeModel, setJudgeModel] = useState(null);
 
@@ -94,6 +95,20 @@ export default function App() {
             const defaults = pickDefaultModels(result.models);
             setSpeakerModel(defaults.speakerModel);
             setJudgeModel(defaults.judgeModel);
+        });
+        return function () {
+            cancelled = true;
+        };
+    }, []);
+
+    // What the key is allowed to do. A failure here is silent: the panel falls
+    // back to stating the request cost of a run without the account figures.
+    useEffect(function () {
+        let cancelled = false;
+        loadAccount().then(function (result) {
+            if (!cancelled && result.ok) {
+                setAccount(result.account);
+            }
         });
         return function () {
             cancelled = true;
@@ -290,6 +305,7 @@ export default function App() {
                             onBudgetChange={setBudgetUsd}
                             estimate={estimate}
                             catalogueError={catalogueError}
+                            account={account}
                             disabled={running}
                         />
 

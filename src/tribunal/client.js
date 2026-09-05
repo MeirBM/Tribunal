@@ -6,7 +6,12 @@
  * failure are decided in exactly one place.
  */
 
-import { CHAT_ENDPOINT, MODELS_ENDPOINT, FALLBACK_MODELS } from "../constants.js";
+import {
+    CHAT_ENDPOINT,
+    MODELS_ENDPOINT,
+    ACCOUNT_ENDPOINT,
+    FALLBACK_MODELS
+} from "../constants.js";
 
 // A single call is abandoned after this long. A judge that never answers must
 // become a visible failure rather than a run that hangs.
@@ -158,4 +163,23 @@ export async function pingModel(modelId) {
         error: result.ok ? null : result.error,
         elapsedMs: Date.now() - startedAt
     };
+}
+
+/*
+ * Reads what the key is allowed to do, so the screen can show the limit that
+ * actually binds on free models. A failure here is not worth reporting to the
+ * user: it costs them nothing, and the panel simply falls back to stating the
+ * request cost of a run without the account figures.
+ */
+export async function loadAccount() {
+    try {
+        const response = await fetch(ACCOUNT_ENDPOINT);
+        const body = await response.json();
+        if (!response.ok || body.error) {
+            return { ok: false, error: body.error || "status " + response.status };
+        }
+        return { ok: true, account: body };
+    } catch (error) {
+        return { ok: false, error: error.message };
+    }
 }
