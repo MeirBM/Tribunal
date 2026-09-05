@@ -345,7 +345,7 @@ export default function CourtroomScene(props) {
                                 <Figure
                                     key={judge.id}
                                     kind="judge"
-                                    name={judge.name.replace("Justice ", "")}
+                                    name={judge.name}
                                     subtitle={judge.title}
                                     accent="#a37b2c"
                                     call={byId[judge.id]}

@@ -42,7 +42,7 @@ function VerdictStrip(props) {
                         size="small"
                         variant="outlined"
                         label={
-                            ruling.judgeName.replace("Justice ", "") +
+                            ruling.judgeName +
                             ": " +
                             (ruling.ok ? ruling.verdict : "no ruling")
                         }

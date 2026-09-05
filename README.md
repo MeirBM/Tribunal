@@ -13,9 +13,9 @@ run.
                     ├── Jon Snow            defence seat   │  all four
                     └── Tyrion Lannister    defence seat ──┤  speeches
                                                            │
-                    ┌── The Barak model   ─── verdict 1  ◀──┤
-                    ├── The Elon model    ─── verdict 2  ◀──┤
-                    └── The Shamgar model ─── verdict 3  ◀──┘
+                    ┌── Aharon Barak   ────── verdict 1  ◀──┤
+                    ├── Menachem Elon  ────── verdict 2  ◀──┤
+                    └── Meir Shamgar   ────── verdict 3  ◀──┘
 
                         → you weigh the three and judge for yourself
 ```
@@ -110,9 +110,9 @@ voices.
 | Prosecution | **Grey Worm** | terse and concrete; trusts sequence — who acted, what was known, what alternatives existed |
 | Defence | **Jon Snow** | plain-spoken; accepts blame quickly and undervalues his own judgment |
 | Defence | **Tyrion Lannister** | quick and ironic; prefers negotiated limits and plans that leave people alive |
-| Judge | **The Barak model** | purposive interpretation and proportionality: proper purpose, rational fit, less harmful means |
-| Judge | **The Elon model** | law as an inherited conversation, and a court whose authority has limits |
-| Judge | **The Shamgar model** | powers, duties and remedies identified before moral intuition is allowed to work |
+| Judge | **Aharon Barak** | purposive interpretation and proportionality: proper purpose, rational fit, less harmful means |
+| Judge | **Menachem Elon** | law as an inherited conversation, and a court whose authority has limits |
+| Judge | **Meir Shamgar** | powers, duties and remedies identified before moral intuition is allowed to work |
 
 The deceased was called from a prosecution seat and the accused from a defence
 seat. That is the dossier's design and it is the sharpest thing about the case.
@@ -131,12 +131,17 @@ prosecution seat will otherwise prosecute by reflex.
 Only the **judges** return a formal verdict. The representatives say where the
 record took them; the bench decides.
 
-**On the judges.** They are written as models of a *method*, and say so in
-their own prompts. The dossier is explicit that its profiles "adapt judicial
-methods; they do not impersonate the judges or predict a real court", and two
-of the three jurists are real public figures. Each prompt describes how that
-method reasons, never what it should decide, so what divides the bench is a
-standard of judgement rather than an assigned outcome.
+**On the judges.** Each prompt opens by stating that this is a fictional
+proceeding, that it applies a way of reasoning drawn from published opinions,
+and that it is not reproducing a private personality or predicting how any real
+court or judge would decide. That follows the dossier, which says its profiles
+"adapt judicial methods; they do not impersonate the judges or predict a real
+court" — and two of the three jurists are real public figures. Each prompt
+describes how that method reasons, never what it should decide, so what divides
+the bench is a standard of judgement rather than an assigned outcome.
+
+Spelled **Aharon** Barak, as in the dossier's own research record; its section
+heading has "Aaron".
 
 ---
 

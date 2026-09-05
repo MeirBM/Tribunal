@@ -70,7 +70,7 @@ export default function HistoryPanel(props) {
                                             size="small"
                                             variant="outlined"
                                             label={
-                                                ruling.judgeName.replace("Justice ", "") +
+                                                ruling.judgeName +
                                                 ": " +
                                                 (ruling.ok ? ruling.verdict : "no ruling")
                                             }
