@@ -267,18 +267,24 @@ export default function ArrangementDiagram(props) {
                 </Typography>
             ) : null}
 
-            <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 1.5, lineHeight: 1.5 }}
-            >
-                {single
-                    ? "One model produces all seven voices, and only the prompts separate them. Judges on one model tend to agree, because they share whatever blind spot that model brought, so agreement here is weaker evidence than the same agreement reached on different models. This is the baseline arrangement B is measured against."
-                    : distinct === 1
-                      ? "Every seat is pointed at the same model, so this is arrangement A wearing arrangement B's label."
-                      : distinct +
-                        " distinct models across seven seats. Where seats sit on different models, a disagreement between them is a signal rather than an artefact of one model."}
-            </Typography>
+            {/*
+              * Nothing is said under arrangement A. The picker's own label
+              * describes it and the diagram above shows one model on all seven
+              * seats, so a caption here would only be repeating what the user
+              * is looking at. What is left is the one thing the screen cannot
+              * show by itself: how many models seven seats actually reached.
+              */}
+            {single ? null : (
+                <Typography
+                    variant="caption"
+                    color={distinct === 1 ? "warning.main" : "text.secondary"}
+                    sx={{ display: "block", mt: 1.5, lineHeight: 1.5 }}
+                >
+                    {distinct === 1
+                        ? "Every seat is pointed at the same model, so this is arrangement A wearing arrangement B's label."
+                        : distinct + " distinct models across seven seats."}
+                </Typography>
+            )}
         </Box>
     );
 }
