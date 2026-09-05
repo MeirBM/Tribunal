@@ -26,6 +26,23 @@ judges wait for all four speeches, then go together.
 
 ---
 
+## The documents
+
+The README says what the app is. These say how it was directed, which is the
+part that has to be openable rather than claimed.
+
+| File | What it holds |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | The agent's standing rules, the map, and the corrections this project earned — written as rules, not complaints |
+| [`docs/problem.md`](docs/problem.md) | Problem statement, stakeholders, definition of done, out of scope — each with its test |
+| [`docs/spec.md`](docs/spec.md) | The specification: goal and reason, fifteen checkable criteria, architectural boundaries, validation, known pitfalls |
+| [`docs/coordination.md`](docs/coordination.md) | The multi-agent arrangement: patterns, each agent's role and boundary, how work passes, what happens when one fails, what it costs and buys |
+
+The specification is the primary artefact. When it and the code disagree, the
+specification is what gets rewritten first.
+
+---
+
 ## What you need before it will run
 
 **An OpenRouter key.** Get one at <https://openrouter.ai/keys>. Free models
