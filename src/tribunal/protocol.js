@@ -104,9 +104,41 @@ function readVerdict(line) {
  * a failure. It never becomes a default verdict, because a default that
  * enters the record is read by everyone afterwards as a decision.
  */
+/*
+ * Lines that belong to the form as it was given to the judge, rather than to
+ * an answer. A reasoning model very often restates its instructions before it
+ * starts thinking, and a parser that reads the restatement finds a verdict
+ * that nobody reached.
+ */
+const TEMPLATE_LINE = /GUILTY\s+or\s+NOT\s+GUILTY|NOT\s+GUILTY\s+or\s+GUILTY|a whole number from|the name of the speaker/i;
+
+const PLACEHOLDER_REASON =
+    /^(first|second|third)\s+reason$|^further reasons|^one paragraph saying/i;
+
 export function parseVerdict(text) {
     const raw = String(text || "");
-    const lines = raw.split(/\r?\n/);
+    const allLines = raw.split(/\r?\n/);
+
+    /*
+     * Take the LAST verdict line that is not part of an echoed template.
+     *
+     * The last one, because a model that restates the form and then thinks
+     * aloud reaches its actual answer at the end. Not part of a template,
+     * because "VERDICT: GUILTY or NOT GUILTY" is the question being asked and
+     * not an answer to it - reading it as one produced a confident NOT GUILTY
+     * from a judge that had in fact concluded the opposite.
+     */
+    let startIndex = 0;
+    let found = false;
+    for (let index = 0; index < allLines.length; index += 1) {
+        const candidate = allLines[index].trim().replace(/\*\*/g, "");
+        if (/^\s*VERDICT\s*[:\-]/i.test(candidate) && !TEMPLATE_LINE.test(candidate)) {
+            startIndex = index;
+            found = true;
+        }
+    }
+
+    const lines = found ? allLines.slice(startIndex) : allLines;
 
     let verdict = null;
     let confidence = null;
@@ -170,7 +202,11 @@ export function parseVerdict(text) {
         if (section === "reasons") {
             const bullet = /^[-*•]\s*(.+)$/.exec(trimmed) || /^\d+[.)]\s*(.+)$/.exec(trimmed);
             if (bullet) {
-                reasons.push(bullet[1].replace(/[*_`]/g, "").trim());
+                const reason = bullet[1].replace(/[*_`]/g, "").trim();
+                // "- first reason" is the form, not a reason.
+                if (!PLACEHOLDER_REASON.test(reason)) {
+                    reasons.push(reason);
+                }
                 continue;
             }
             // A line under REASONS that is not a bullet ends the list.
@@ -184,8 +220,11 @@ export function parseVerdict(text) {
 
     // A judge that ignored the form entirely may still have named a verdict in
     // its first line. That is worth recovering; two missing reasons are not.
-    if (!verdict && lines.length > 0) {
-        verdict = readVerdict(lines.slice(0, 3).join(" "));
+    if (!verdict && found && lines.length > 0) {
+        const head = lines.slice(0, 3).filter(function (line) {
+            return !TEMPLATE_LINE.test(line);
+        });
+        verdict = readVerdict(head.join(" "));
     }
 
     const reasoning = reasoningLines.join("\n").trim();

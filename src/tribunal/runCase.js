@@ -119,6 +119,7 @@ export async function runCase(options) {
 
     const speeches = await Promise.all(
         SPEAKERS.map(async function (speaker) {
+            const callStarted = Date.now();
             const result = await callModel({
                 model: models.speakerModel.id,
                 system: speaker.systemPrompt,
@@ -144,6 +145,7 @@ export async function runCase(options) {
                 totalTokens: result.ok ? result.usage.totalTokens : 0,
                 costUsd: cost,
                 elapsedMs: result.ok ? result.elapsedMs : 0,
+                roundTripMs: Date.now() - callStarted,
                 verdict: null
             });
 
@@ -201,6 +203,7 @@ export async function runCase(options) {
 
     const rulings = await Promise.all(
         JUDGES.map(async function (judge) {
+            const callStarted = Date.now();
             const result = await callModel({
                 model: models.judgeModel.id,
                 system: judge.systemPrompt,
@@ -227,6 +230,7 @@ export async function runCase(options) {
                     totalTokens: 0,
                     costUsd: 0,
                     elapsedMs: 0,
+                    roundTripMs: Date.now() - callStarted,
                     verdict: null
                 });
 
@@ -242,7 +246,23 @@ export async function runCase(options) {
                 };
             }
 
-            const parsed = parseVerdict(result.text);
+            /*
+             * An answer cut off at the token limit is not a short ruling, it
+             * is an unfinished one. Reasoning models spend the allowance
+             * thinking aloud and stop before they reach the form, and what is
+             * left behind reads like an answer without being one.
+             */
+            const truncated = result.finishReason === "length";
+            const parsed = truncated
+                ? {
+                      ok: false,
+                      problem:
+                          "The answer was cut off at the token limit before the judge " +
+                          "finished. This model reasons at length before it writes its " +
+                          "ruling; give it a larger allowance or choose another.",
+                      raw: result.text
+                  }
+                : parseVerdict(result.text);
 
             recordCall({
                 id: judge.id,
@@ -259,6 +279,7 @@ export async function runCase(options) {
                 totalTokens: result.usage.totalTokens,
                 costUsd: cost,
                 elapsedMs: result.elapsedMs,
+                roundTripMs: Date.now() - callStarted,
                 verdict: parsed.ok ? parsed.verdict : null
             });
 
@@ -324,11 +345,24 @@ function summarise(calls, wallMs, waveOneMs, waveTwoMs) {
                 completionTokens: sum.completionTokens + call.completionTokens,
                 totalTokens: sum.totalTokens + call.totalTokens,
                 costUsd: sum.costUsd + call.costUsd,
-                // What the same seven calls would have taken one after another.
-                sequentialMs: sum.sequentialMs + call.elapsedMs
+                /*
+                 * Two different clocks, and confusing them makes parallelism
+                 * look like a loss.
+                 *
+                 * sequentialMs sums the full round trip of each call as the
+                 * browser saw it, so it is the honest answer to "what if these
+                 * had been run one after another".
+                 *
+                 * modelMs sums only the time the model itself spent, measured
+                 * inside the server. The gap between the two is the platform:
+                 * cold starts and queueing, which a sequential run would also
+                 * have paid, once per call.
+                 */
+                sequentialMs: sum.sequentialMs + (call.roundTripMs || 0),
+                modelMs: sum.modelMs + call.elapsedMs
             };
         },
-        { promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, sequentialMs: 0 }
+        { promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, sequentialMs: 0, modelMs: 0 }
     );
 
     totals.callCount = calls.length;

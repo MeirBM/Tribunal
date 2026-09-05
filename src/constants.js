@@ -41,7 +41,12 @@ export const MAX_BUDGET_USD = 5;
 
 // How many completion tokens each kind of call may produce.
 export const SPEECH_MAX_TOKENS = 900;
-export const VERDICT_MAX_TOKENS = 900;
+/*
+ * Judges get a larger allowance than speakers because several free models
+ * reason at length before they answer, and an answer cut off mid-thought is a
+ * lost call rather than a short one.
+ */
+export const VERDICT_MAX_TOKENS = 1600;
 
 // The two answers a judge is allowed to return. Anything else is a malformed
 // answer, and a malformed answer is a failure, never a verdict.

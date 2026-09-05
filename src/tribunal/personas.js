@@ -144,7 +144,9 @@ const VERDICT_FORM =
     "REASONING: one paragraph saying how you arrived at the verdict, which " +
     "arguments you accepted, and which you set aside and why.\n\n" +
     "The VERDICT line must contain one of those two answers and nothing else. " +
-    "You must give at least " + MINIMUM_REASONS + " reasons.";
+    "You must give at least " + MINIMUM_REASONS + " reasons.\n\n" +
+    "Do not restate these instructions, and do not write out your thinking " +
+    "before the form. Begin your answer at the word VERDICT.";
 
 export const JUDGE_FORM = VERDICT_FORM;
 

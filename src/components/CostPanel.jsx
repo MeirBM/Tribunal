@@ -67,8 +67,8 @@ export default function CostPanel(props) {
         };
     });
 
-    // How much of the wall clock the two waves saved against calling the same
-    // seven one after another.
+    // What the two waves saved against calling the same seven one after
+    // another, comparing like with like: both figures are full round trips.
     const saved = totals.sequentialMs - totals.wallMs;
 
     return (
@@ -120,7 +120,7 @@ export default function CostPanel(props) {
                                 note={
                                     saved > 0
                                         ? formatDuration(totals.sequentialMs) + " if run one by one"
-                                        : null
+                                        : formatDuration(totals.modelMs || 0) + " of model time"
                                 }
                             />
                         </Grid>
@@ -131,9 +131,12 @@ export default function CostPanel(props) {
                             <Typography variant="body2" color="text.secondary">
                                 The four speeches were called together and the three rulings were
                                 called together, which turned{" "}
-                                <strong>{formatDuration(totals.sequentialMs)}</strong> of model time
-                                into <strong>{formatDuration(totals.wallMs)}</strong> of waiting.
-                                Running in parallel saves time; it never saves a single token.
+                                <strong>{formatDuration(totals.sequentialMs)}</strong> of calls into{" "}
+                                <strong>{formatDuration(totals.wallMs)}</strong> of waiting. Of that,{" "}
+                                <strong>{formatDuration(totals.modelMs || 0)}</strong> was the models
+                                actually generating; the rest is network and cold starts, which a
+                                sequential run would have paid once per call too. Running in
+                                parallel saves time; it never saves a single token.
                             </Typography>
                         </Box>
                     ) : null}
