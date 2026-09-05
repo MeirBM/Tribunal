@@ -256,7 +256,8 @@ export default function App() {
                             Tribunal
                         </Typography>
                         <Typography variant="caption" sx={{ opacity: 0.75 }}>
-                            Four speakers argue it. Three judges rule on it, alone. You weigh them.
+                            Four representatives address it. Three judges rule on it, alone.
+                            You weigh them.
                         </Typography>
                     </Box>
                     <Chip
