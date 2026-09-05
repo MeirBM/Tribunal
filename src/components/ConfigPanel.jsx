@@ -21,7 +21,6 @@ import Divider from "@mui/material/Divider";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
-import Slider from "@mui/material/Slider";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -33,7 +32,9 @@ import {
     MAX_BUDGET_USD,
     CALLS_PER_RUN
 } from "../constants.js";
-import { formatUsd, formatDuration } from "../lib/money.js";
+import { formatDuration } from "../lib/money.js";
+import BudgetScales from "./BudgetScales.jsx";
+import ArrangementDiagram from "./ArrangementDiagram.jsx";
 import { pingModel } from "../tribunal/client.js";
 
 // One row of the model list: the name, then what it costs per million tokens,
@@ -247,6 +248,14 @@ export default function ConfigPanel(props) {
                     </Alert>
                 ) : null}
 
+                <Box sx={{ mt: 2 }}>
+                    <ArrangementDiagram
+                        config={props.config}
+                        speakerModel={props.speakerModel}
+                        judgeModel={props.judgeModel}
+                    />
+                </Box>
+
                 <ModelTester
                     speakerModel={props.speakerModel}
                     judgeModel={props.judgeModel}
@@ -256,49 +265,12 @@ export default function ConfigPanel(props) {
 
                 <Divider sx={{ my: 2 }} />
 
-                <Typography variant="subtitle2" gutterBottom>
-                    Budget for one run
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                    The run is refused before the first call if its worst case exceeds this.
-                    The brief allows five dollars; free models keep it at nothing.
-                </Typography>
-                <Box sx={{ px: 1, mt: 1 }}>
-                    <Slider
-                        value={props.budgetUsd}
-                        min={0.05}
-                        max={MAX_BUDGET_USD}
-                        step={0.05}
-                        marks={[
-                            { value: 0.05, label: "$0.05" },
-                            { value: 1, label: "$1" },
-                            { value: MAX_BUDGET_USD, label: "$5" }
-                        ]}
-                        valueLabelDisplay="auto"
-                        valueLabelFormat={function (value) {
-                            return "$" + value.toFixed(2);
-                        }}
-                        onChange={function (event, value) {
-                            props.onBudgetChange(value);
-                        }}
-                        disabled={props.disabled}
-                    />
-                </Box>
-
-                {estimate ? (
-                    <Alert severity={overBudget ? "error" : "success"} sx={{ mt: 1 }}>
-                        <Typography variant="body2">
-                            <strong>{CALLS_PER_RUN} calls.</strong> Worst case{" "}
-                            <strong>{formatUsd(estimate.worstCaseUsd)}</strong> against a cap of{" "}
-                            <strong>{formatUsd(props.budgetUsd)}</strong>.
-                            {overBudget
-                                ? " This run will be refused. Choose cheaper models or raise the cap."
-                                : estimate.worstCaseUsd === 0
-                                  ? " Every call is on a free model, so this run costs nothing."
-                                  : " The real charge is normally well under the worst case."}
-                        </Typography>
-                    </Alert>
-                ) : null}
+                <BudgetScales
+                    budgetUsd={props.budgetUsd}
+                    estimateUsd={estimate ? estimate.worstCaseUsd : 0}
+                    onChange={props.onBudgetChange}
+                    disabled={props.disabled}
+                />
             </CardContent>
         </Card>
     );

@@ -183,18 +183,9 @@ in it, so the rules can be read — and tested — without going through the UI.
 
 ## The team
 
-Built by a team of three.
+Built by a team of two.
 
-| Name | GitHub | Worked on |
-|---|---|---|
-| *(fill in)* | | |
-| *(fill in)* | | |
-| *(fill in)* | | |
-
-**GitHub** was used for version control: a branch per piece of work, pull
-requests to bring them together, and the commit history as the record of who
-changed what and why.
-
-**Discord** was used for coordination: dividing the work, agreeing the shape of
-the charge sheet and the verdict form before anyone wrote code, and working
-through the failures that only show up against a live model.
+| Name             | GitHub | Worked on |
+|------------------|---|---|
+| *Meir Ben Moshe* | https://github.com/MeirBM| |
+| *Tal Almagor*    | | |

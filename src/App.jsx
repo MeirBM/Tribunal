@@ -41,7 +41,7 @@ import { formatUsd } from "./lib/money.js";
 
 import ChargeSheetForm, { validateChargeSheet } from "./components/ChargeSheetForm.jsx";
 import ConfigPanel from "./components/ConfigPanel.jsx";
-import RunProgress from "./components/RunProgress.jsx";
+import CourtroomScene from "./components/CourtroomScene.jsx";
 import VerdictsPanel from "./components/VerdictsPanel.jsx";
 import SpeechesPanel from "./components/SpeechesPanel.jsx";
 import ProtocolPanel from "./components/ProtocolPanel.jsx";
@@ -315,7 +315,7 @@ export default function App() {
                 {/* ---------------- the opinion ---------------- */}
                 {tab === 1 ? (
                     <Stack gap={3}>
-                        {running ? <RunProgress calls={liveCalls} stage={stage} /> : null}
+                        {running ? <CourtroomScene calls={liveCalls} stage={stage} /> : null}
 
                         {runError && !running ? <Alert severity="error">{runError}</Alert> : null}
 
