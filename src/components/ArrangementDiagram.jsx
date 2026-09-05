@@ -19,6 +19,7 @@ import GavelIcon from "@mui/icons-material/Gavel";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 
 import { CONFIG_SINGLE } from "../constants.js";
+import { SPEAKERS, JUDGES } from "../tribunal/personas.js";
 import { SIDE_COLORS } from "../theme.js";
 
 // A pulse travelling down the wire, in the direction the work flows.
@@ -137,13 +138,39 @@ function ModelCard(props) {
 
 export default function ArrangementDiagram(props) {
     const single = props.config === CONFIG_SINGLE;
-    const speakerModel = props.speakerModel;
-    const judgeModel = single ? props.speakerModel : props.judgeModel;
-    const sameModel = single || (speakerModel && judgeModel && speakerModel.id === judgeModel.id);
+    const agentModels = props.agentModels;
+    const distinct = props.distinct || 1;
 
-    if (!speakerModel) {
+    if (single && !props.singleModel) {
         return null;
     }
+
+    // In B, group the seats by the model they landed on, so the picture shows
+    // what the arrangement actually is rather than what it is called: seven
+    // seats on two models is a picture of two models.
+    const groups = [];
+    if (!single && agentModels) {
+        const byModel = {};
+        SPEAKERS.concat(JUDGES).forEach(function (agent) {
+            const model = agentModels[agent.id];
+            if (!model) {
+                return;
+            }
+            if (!byModel[model.id]) {
+                byModel[model.id] = { model: model, agents: [] };
+            }
+            byModel[model.id].agents.push(agent);
+        });
+        Object.keys(byModel).forEach(function (key) {
+            groups.push(byModel[key]);
+        });
+    }
+
+    const anyRouter = single
+        ? props.singleModel.isRouter
+        : groups.some(function (group) {
+              return group.model.isRouter;
+          });
 
     return (
         <Box
@@ -155,70 +182,88 @@ export default function ArrangementDiagram(props) {
                 backgroundColor: "action.hover"
             }}
         >
-            <Stack direction={{ xs: "column", sm: "row" }} alignItems="stretch" gap={1.5}>
-                {/* the seven agents, grouped by what they do */}
-                <Stack gap={1.5} justifyContent="space-around" sx={{ flexShrink: 0 }}>
-                    <Stack direction="row" alignItems="center" gap={1}>
-                        <Dots
-                            count={4}
-                            color={SIDE_COLORS.Prosecution}
-                            icon={<RecordVoiceOverIcon sx={{ fontSize: 14 }} />}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
-                            4 advocates
-                        </Typography>
+            {single ? (
+                <Stack direction={{ xs: "column", sm: "row" }} alignItems="stretch" gap={1.5}>
+                    <Stack gap={1.5} justifyContent="space-around" sx={{ flexShrink: 0 }}>
+                        <Stack direction="row" alignItems="center" gap={1}>
+                            <Dots
+                                count={4}
+                                color={SIDE_COLORS.Prosecution}
+                                icon={<RecordVoiceOverIcon sx={{ fontSize: 14 }} />}
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                                4 representatives
+                            </Typography>
+                        </Stack>
+                        <Stack direction="row" alignItems="center" gap={1}>
+                            <Dots count={3} color="#a37b2c" icon={<GavelIcon sx={{ fontSize: 14 }} />} />
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                                3 judges
+                            </Typography>
+                        </Stack>
                     </Stack>
-                    <Stack direction="row" alignItems="center" gap={1}>
-                        <Dots count={3} color="#a37b2c" icon={<GavelIcon sx={{ fontSize: 14 }} />} />
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
-                            3 judges
-                        </Typography>
+                    <Stack gap={1.5} justifyContent="space-around" sx={{ flexGrow: 1, minWidth: 40, py: 1.5 }}>
+                        <Wire color={SIDE_COLORS.Prosecution} delay={0} />
+                        <Wire color="#a37b2c" delay={1.2} />
                     </Stack>
-                </Stack>
-
-                {/* the wiring */}
-                <Stack gap={1.5} justifyContent="space-around" sx={{ flexGrow: 1, minWidth: 40, py: 1.5 }}>
-                    <Wire color={SIDE_COLORS.Prosecution} delay={0} />
-                    <Wire color="#a37b2c" delay={1.2} />
-                </Stack>
-
-                {/* the model, or the two models */}
-                <Stack gap={1} justifyContent="center" sx={{ flexShrink: 0 }}>
-                    {sameModel ? (
+                    <Stack justifyContent="center" sx={{ flexShrink: 0 }}>
                         <ModelCard
-                            model={speakerModel}
+                            model={props.singleModel}
                             label="ALL SEVEN CALLS"
                             accent="#1f2933"
                             calls={7}
                         />
-                    ) : (
-                        <React.Fragment>
-                            <ModelCard
-                                model={speakerModel}
-                                label="THE ADVOCATES"
-                                accent={SIDE_COLORS.Prosecution}
-                                calls={4}
-                            />
-                            <ModelCard
-                                model={judgeModel}
-                                label="THE BENCH"
-                                accent="#a37b2c"
-                                calls={3}
-                            />
-                        </React.Fragment>
-                    )}
+                    </Stack>
                 </Stack>
-            </Stack>
+            ) : (
+                <Stack gap={1}>
+                    {groups.map(function (group) {
+                        const judges = group.agents.filter(function (a) {
+                            return !a.role;
+                        });
+                        const accent = judges.length === group.agents.length
+                            ? "#a37b2c"
+                            : SIDE_COLORS.Prosecution;
+                        return (
+                            <Stack
+                                key={group.model.id}
+                                direction={{ xs: "column", sm: "row" }}
+                                alignItems={{ xs: "stretch", sm: "center" }}
+                                gap={1}
+                            >
+                                <Box sx={{ minWidth: { sm: 240 } }}>
+                                    <Typography variant="caption" sx={{ fontSize: 10.5 }}>
+                                        {group.agents
+                                            .map(function (agent) {
+                                                return agent.name;
+                                            })
+                                            .join(" · ")}
+                                    </Typography>
+                                </Box>
+                                <Wire color={accent} delay={0} />
+                                <ModelCard
+                                    model={group.model}
+                                    label={
+                                        group.agents.length +
+                                        (group.agents.length === 1 ? " SEAT" : " SEATS")
+                                    }
+                                    accent={accent}
+                                    calls={group.agents.length}
+                                />
+                            </Stack>
+                        );
+                    })}
+                </Stack>
+            )}
 
-            {(speakerModel.isRouter || (judgeModel && judgeModel.isRouter)) ? (
+            {anyRouter ? (
                 <Typography
                     variant="caption"
                     sx={{ display: "block", mt: 1.5, lineHeight: 1.5, color: "error.main" }}
                 >
                     A router was chosen, not a model. It forwards every call to whichever free
-                    model is free at that moment, so these seven calls can reach seven different
-                    models. Whatever this run shows, it is not a comparison between one model and
-                    two — pick a named model to make the arrangement mean anything.
+                    model is free at that moment, so calls through it can reach different models
+                    each time. Pick a named model to make the arrangement mean anything.
                 </Typography>
             ) : null}
 
@@ -227,9 +272,12 @@ export default function ArrangementDiagram(props) {
                 color="text.secondary"
                 sx={{ display: "block", mt: 1.5, lineHeight: 1.5 }}
             >
-                {sameModel
+                {single
                     ? "One model produces all seven voices, so the bench shares whatever blind spot that model brought. Three judges that agree by construction tell you nothing."
-                    : "The judges sit on a model the advocates never touched, so where they disagree, the disagreement is a signal rather than an artefact of one model."}
+                    : distinct === 1
+                      ? "Every seat is pointed at the same model, so this is arrangement A wearing arrangement B's label."
+                      : distinct +
+                        " distinct models across seven seats. Where seats sit on different models, a disagreement between them is a signal rather than an artefact of one model."}
             </Typography>
         </Box>
     );

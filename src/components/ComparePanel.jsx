@@ -97,18 +97,23 @@ function RunColumn(props) {
 
                 <Divider sx={{ my: 1 }} />
                 <Row
-                    label="Speakers on"
-                    value={
-                        <Typography variant="caption" sx={{ fontFamily: "monospace" }}>
-                            {record.models.speaker.id}
-                        </Typography>
-                    }
+                    label="Distinct models"
+                    value={(record.distinctModels || 1) + " of 7 seats"}
                 />
                 <Row
-                    label="Judges on"
+                    label="Models"
                     value={
-                        <Typography variant="caption" sx={{ fontFamily: "monospace" }}>
-                            {record.models.judge.id}
+                        <Typography
+                            variant="caption"
+                            sx={{ fontFamily: "monospace", display: "block", textAlign: "right" }}
+                        >
+                            {Array.from(
+                                new Set(
+                                    Object.keys(record.agentModels || {}).map(function (key) {
+                                        return record.agentModels[key].id;
+                                    })
+                                )
+                            ).join("\n")}
                         </Typography>
                     }
                 />

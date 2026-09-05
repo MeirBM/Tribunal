@@ -1,19 +1,22 @@
 /*
- * ConfigPanel.jsx - the two arrangements, the models, and the budget.
+ * ConfigPanel.jsx - the arrangement, the models, and the budget.
  *
- * The whole comparison the project is asked to make lives on this panel:
- * arrangement A gives one model all seven calls and lets the system prompts do
- * the work, arrangement B splits the panel so the speakers and the judges run
- * on different models. The estimate shown next to the cap is the worst case,
- * not the likely case, because a cap that binds on the likely case does not
- * bind at all.
+ * The comparison the project exists to make lives on this panel. Arrangement A
+ * gives one model all seven calls and lets the system prompts do the whole job
+ * of making seven voices. Arrangement B gives every seat its own model, so the
+ * personalities are carried by different machines as well as different
+ * prompts. Pointing all four representatives at one model and all three judges
+ * at another is a special case of B, not a third arrangement.
+ *
+ * The estimate shown beside the budget is the worst case, not the likely case,
+ * because a cap that binds only on the likely case does not bind.
  */
 
 import React from "react";
 import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
 import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
@@ -24,36 +27,35 @@ import RadioGroup from "@mui/material/RadioGroup";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import ShuffleIcon from "@mui/icons-material/Shuffle";
 
-import {
-    CONFIG_SINGLE,
-    CONFIG_SPLIT,
-    CONFIG_LABELS,
-    MAX_BUDGET_USD,
-    CALLS_PER_RUN
-} from "../constants.js";
+import { CONFIG_SINGLE, CONFIG_SPLIT, CONFIG_LABELS, CALLS_PER_RUN } from "../constants.js";
+import { SPEAKERS, JUDGES } from "../tribunal/personas.js";
+import { SIDE_COLORS } from "../theme.js";
 import { formatDuration } from "../lib/money.js";
+import { pingModel } from "../tribunal/client.js";
 import BudgetScales from "./BudgetScales.jsx";
 import RequestQuota from "./RequestQuota.jsx";
 import ArrangementDiagram from "./ArrangementDiagram.jsx";
-import { pingModel } from "../tribunal/client.js";
 
 // One row of the model list: the name, then what it costs per million tokens,
-// which is the unit the prices are actually readable in.
+// which is the unit these prices are actually readable in.
 function ModelOption(props) {
     const model = props.model;
-    const perMillionIn = model.promptPrice * 1000000;
-    const perMillionOut = model.completionPrice * 1000000;
     return (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
             <Typography variant="body2" sx={{ flexGrow: 1, minWidth: 0 }} noWrap>
                 {model.name}
             </Typography>
+            {model.isRouter ? (
+                <Chip label="router" size="small" color="error" variant="outlined" />
+            ) : null}
             {model.isFree ? (
                 <Chip label="free" size="small" color="success" variant="outlined" />
             ) : (
                 <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
-                    ${perMillionIn.toFixed(2)} in / ${perMillionOut.toFixed(2)} out per 1M
+                    ${(model.promptPrice * 1000000).toFixed(2)} in / $
+                    {(model.completionPrice * 1000000).toFixed(2)} out per 1M
                 </Typography>
             )}
         </Box>
@@ -64,13 +66,14 @@ function ModelPicker(props) {
     return (
         <Autocomplete
             options={props.models}
-            value={props.value}
+            value={props.value || null}
             onChange={function (event, value) {
                 if (value) {
                     props.onChange(value);
                 }
             }}
             disabled={props.disabled}
+            size="small"
             getOptionLabel={function (model) {
                 return model ? model.name : "";
             }}
@@ -90,18 +93,47 @@ function ModelPicker(props) {
             renderInput={function (params) {
                 return <TextField {...params} label={props.label} size="small" />;
             }}
-            sx={{ minWidth: 260, flexGrow: 1 }}
+            sx={{ minWidth: 240, flexGrow: 1 }}
         />
+    );
+}
+
+// One seat and the model behind it.
+function SeatRow(props) {
+    const agent = props.agent;
+    const accent = props.accent;
+    return (
+        <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "stretch", sm: "center" }}
+            gap={1.5}
+            sx={{ py: 0.75 }}
+        >
+            <Box sx={{ width: { sm: 190 }, flexShrink: 0 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.25 }}>
+                    {agent.name}
+                </Typography>
+                <Typography variant="caption" sx={{ color: accent, fontSize: 10.5 }}>
+                    {props.seat}
+                </Typography>
+            </Box>
+            <ModelPicker
+                label="Model"
+                models={props.models}
+                value={props.value}
+                onChange={props.onChange}
+                disabled={props.disabled}
+            />
+        </Stack>
     );
 }
 
 /*
  * Tries the chosen models with one eight-token call each.
  *
- * Roughly half the free models on OpenRouter refuse or rate-limit at any given
+ * Roughly half the free models on OpenRouter refuse or rate-limit at any
  * moment. Discovering that through a failed deliberation costs four speeches
- * and leaves empty seats on the bench; discovering it here costs nothing and
- * takes a second.
+ * and leaves empty seats on the bench; discovering it here costs nothing.
  */
 function ModelTester(props) {
     const [state, setState] = React.useState(null);
@@ -109,16 +141,17 @@ function ModelTester(props) {
 
     const targets = React.useMemo(
         function () {
+            const seen = {};
             const list = [];
-            if (props.speakerModel) {
-                list.push({ label: props.splitConfig ? "Speakers" : "All seven", model: props.speakerModel });
-            }
-            if (props.splitConfig && props.judgeModel && props.judgeModel.id !== (props.speakerModel || {}).id) {
-                list.push({ label: "Judges", model: props.judgeModel });
-            }
+            props.modelIds.forEach(function (model) {
+                if (model && !seen[model.id]) {
+                    seen[model.id] = true;
+                    list.push(model);
+                }
+            });
             return list;
         },
-        [props.speakerModel, props.judgeModel, props.splitConfig]
+        [props.modelIds]
     );
 
     async function test() {
@@ -126,9 +159,8 @@ function ModelTester(props) {
         setState(null);
         const results = [];
         for (let index = 0; index < targets.length; index += 1) {
-            const target = targets[index];
-            const outcome = await pingModel(target.model.id);
-            results.push({ label: target.label, id: target.model.id, ...outcome });
+            const outcome = await pingModel(targets[index].id);
+            results.push({ id: targets[index].id, ...outcome });
         }
         setState(results);
         setBusy(false);
@@ -141,7 +173,10 @@ function ModelTester(props) {
     return (
         <Box sx={{ mt: 2 }}>
             <Button size="small" variant="outlined" onClick={test} disabled={busy || props.disabled}>
-                {busy ? "Testing…" : "Test these models"}
+                {busy
+                    ? "Testing…"
+                    : "Test " +
+                      (targets.length === 1 ? "this model" : "these " + targets.length + " models")}
             </Button>
             {state ? (
                 <Stack gap={0.5} sx={{ mt: 1.5 }}>
@@ -154,7 +189,7 @@ function ModelTester(props) {
                                 sx={{ py: 0.25 }}
                             >
                                 <Typography variant="body2">
-                                    <strong>{result.label}</strong> · {result.id} —{" "}
+                                    <strong>{result.id}</strong> —{" "}
                                     {result.ok
                                         ? "answered in " + formatDuration(result.elapsedMs)
                                         : result.error}
@@ -171,14 +206,43 @@ function ModelTester(props) {
 export default function ConfigPanel(props) {
     const isSplit = props.config === CONFIG_SPLIT;
     const estimate = props.estimate;
-    const overBudget = estimate && estimate.worstCaseUsd > props.budgetUsd;
+
+    const agentModels = React.useMemo(
+        function () {
+            if (!isSplit) {
+                return null;
+            }
+            const map = {};
+            SPEAKERS.concat(JUDGES).forEach(function (agent) {
+                map[agent.id] = props.perAgentModels[agent.id] || props.singleModel;
+            });
+            return map;
+        },
+        [isSplit, props.perAgentModels, props.singleModel]
+    );
+
+    const distinct = agentModels
+        ? new Set(
+              Object.keys(agentModels)
+                  .map(function (key) {
+                      return agentModels[key] ? agentModels[key].id : null;
+                  })
+                  .filter(Boolean)
+          ).size
+        : 1;
+
+    const testTargets = isSplit
+        ? Object.keys(agentModels).map(function (key) {
+              return agentModels[key];
+          })
+        : [props.singleModel];
 
     return (
         <Card variant="outlined">
             <CardContent>
                 <Typography variant="h6">The arrangement</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    Seven calls either way. What changes is how many models produce them.
+                    {CALLS_PER_RUN} calls either way. What changes is how many models produce them.
                 </Typography>
 
                 <RadioGroup
@@ -213,8 +277,8 @@ export default function ConfigPanel(props) {
                                     {CONFIG_LABELS.SPLIT}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                    One model argues, a different one rules. The judges no longer
-                                    share the speakers' habits of reasoning.
+                                    Every seat gets its own model, so the personalities are carried
+                                    by different machines as well as different prompts.
                                 </Typography>
                             </Box>
                         }
@@ -223,24 +287,95 @@ export default function ConfigPanel(props) {
 
                 <Divider sx={{ my: 2 }} />
 
-                <Stack direction={{ xs: "column", md: "row" }} gap={2}>
+                {isSplit ? (
+                    <Box>
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            flexWrap="wrap"
+                            gap={1}
+                            sx={{ mb: 1 }}
+                        >
+                            <Typography variant="subtitle2">
+                                A model for each seat
+                                <Typography component="span" variant="caption" color="text.secondary">
+                                    {" · " + distinct + " distinct across " + CALLS_PER_RUN}
+                                </Typography>
+                            </Typography>
+                            <Button
+                                size="small"
+                                startIcon={<ShuffleIcon />}
+                                onClick={props.onSpreadModels}
+                                disabled={props.disabled}
+                            >
+                                Spread distinct models
+                            </Button>
+                        </Stack>
+
+                        <Typography variant="overline" sx={{ color: SIDE_COLORS.Prosecution, fontSize: 10 }}>
+                            Representatives
+                        </Typography>
+                        {SPEAKERS.map(function (speaker) {
+                            return (
+                                <SeatRow
+                                    key={speaker.id}
+                                    agent={speaker}
+                                    seat={speaker.role + " seat"}
+                                    accent={SIDE_COLORS[speaker.role]}
+                                    models={props.models}
+                                    value={agentModels[speaker.id]}
+                                    onChange={function (model) {
+                                        props.onPerAgentChange(speaker.id, model);
+                                    }}
+                                    disabled={props.disabled}
+                                />
+                            );
+                        })}
+
+                        <Typography
+                            variant="overline"
+                            sx={{ color: "#a37b2c", fontSize: 10, mt: 1.5, display: "block" }}
+                        >
+                            The bench
+                        </Typography>
+                        {JUDGES.map(function (judge) {
+                            return (
+                                <SeatRow
+                                    key={judge.id}
+                                    agent={judge}
+                                    seat={judge.title}
+                                    accent="#a37b2c"
+                                    models={props.models}
+                                    value={agentModels[judge.id]}
+                                    onChange={function (model) {
+                                        props.onPerAgentChange(judge.id, model);
+                                    }}
+                                    disabled={props.disabled}
+                                />
+                            );
+                        })}
+
+                        {distinct < CALLS_PER_RUN ? (
+                            <Alert severity="info" sx={{ mt: 1.5, py: 0.25 }}>
+                                <Typography variant="caption">
+                                    {distinct} distinct model{distinct === 1 ? "" : "s"} across seven
+                                    seats. Seats sharing a model share its habits of reasoning, so a
+                                    run with few distinct models is closer to arrangement A than the
+                                    label suggests — worth saying in the comparison.
+                                </Typography>
+                            </Alert>
+                        ) : null}
+                    </Box>
+                ) : (
                     <ModelPicker
-                        label={isSplit ? "Model for the four speakers" : "Model for all seven calls"}
+                        label="Model for all seven calls"
                         models={props.models}
-                        value={props.speakerModel}
-                        onChange={props.onSpeakerModelChange}
+                        value={props.singleModel}
+                        onChange={props.onSingleModelChange}
                         disabled={props.disabled}
                     />
-                    {isSplit ? (
-                        <ModelPicker
-                            label="Model for the three judges"
-                            models={props.models}
-                            value={props.judgeModel}
-                            onChange={props.onJudgeModelChange}
-                            disabled={props.disabled}
-                        />
-                    ) : null}
-                </Stack>
+                )}
 
                 {props.catalogueError ? (
                     <Alert severity="info" sx={{ mt: 2 }}>
@@ -252,17 +387,13 @@ export default function ConfigPanel(props) {
                 <Box sx={{ mt: 2 }}>
                     <ArrangementDiagram
                         config={props.config}
-                        speakerModel={props.speakerModel}
-                        judgeModel={props.judgeModel}
+                        singleModel={props.singleModel}
+                        agentModels={agentModels}
+                        distinct={distinct}
                     />
                 </Box>
 
-                <ModelTester
-                    speakerModel={props.speakerModel}
-                    judgeModel={props.judgeModel}
-                    splitConfig={isSplit}
-                    disabled={props.disabled}
-                />
+                <ModelTester modelIds={testTargets} disabled={props.disabled} />
 
                 <Divider sx={{ my: 2 }} />
 
@@ -277,10 +408,9 @@ export default function ConfigPanel(props) {
 
                 <RequestQuota
                     account={props.account}
-                    usingFreeModels={
-                        Boolean(props.speakerModel && props.speakerModel.isFree) &&
-                        (!isSplit || Boolean(props.judgeModel && props.judgeModel.isFree))
-                    }
+                    usingFreeModels={testTargets.every(function (model) {
+                        return model && model.isFree;
+                    })}
                 />
             </CardContent>
         </Card>

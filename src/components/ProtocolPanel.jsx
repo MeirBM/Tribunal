@@ -19,7 +19,8 @@ import Typography from "@mui/material/Typography";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadIcon from "@mui/icons-material/Download";
 
-import { CONFIG_LABELS } from "../constants.js";
+import { CONFIG_LABELS, CALLS_PER_RUN } from "../constants.js";
+import { SPEAKERS, JUDGES } from "../tribunal/personas.js";
 import { VERDICT_COLORS } from "../theme.js";
 import { formatUsd, formatTokens, formatDuration } from "../lib/money.js";
 
@@ -32,8 +33,13 @@ export function renderProtocolText(run) {
     lines.push("Case: " + run.runId);
     lines.push("Sat: " + new Date(run.createdAt).toLocaleString());
     lines.push("Arrangement: " + (CONFIG_LABELS[run.config] || run.config));
-    lines.push("Model for the speakers: " + run.models.speaker.id);
-    lines.push("Model for the judges: " + run.models.judge.id);
+    lines.push(
+        "Distinct models used: " + (run.distinctModels || 1) + " across " + CALLS_PER_RUN + " calls"
+    );
+    SPEAKERS.concat(JUDGES).forEach(function (agent) {
+        const model = run.agentModels ? run.agentModels[agent.id] : null;
+        lines.push("  " + agent.name.padEnd(22) + (model ? model.id : "unknown"));
+    });
     lines.push("");
     lines.push("THE CHARGE SHEET");
     lines.push("Defendant: " + run.chargeSheet.defendant);

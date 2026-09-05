@@ -35,9 +35,10 @@ import {
     DEFAULT_VERDICT_SET
 } from "./constants.js";
 import { loadModels, loadAccount } from "./tribunal/client.js";
-import { pickDefaultModels } from "./tribunal/modelChoice.js";
+import { pickDefaultModels, assignDistinctModels } from "./tribunal/modelChoice.js";
 import { planRun, runCase } from "./tribunal/runCase.js";
 import { openCasesDB } from "./lib/casesDb.js";
+import { SPEAKERS, JUDGES } from "./tribunal/personas.js";
 import { formatUsd } from "./lib/money.js";
 
 import ChargeSheetForm, { validateChargeSheet } from "./components/ChargeSheetForm.jsx";
@@ -63,8 +64,8 @@ export default function App() {
     const [models, setModels] = useState([]);
     const [catalogueError, setCatalogueError] = useState(null);
     const [account, setAccount] = useState(null);
-    const [speakerModel, setSpeakerModel] = useState(null);
-    const [judgeModel, setJudgeModel] = useState(null);
+    const [singleModel, setSingleModel] = useState(null);
+    const [perAgentModels, setPerAgentModels] = useState({});
 
     const [config, setConfig] = useState(CONFIG_SINGLE);
     const [budgetUsd, setBudgetUsd] = useState(DEFAULT_BUDGET_USD);
@@ -94,8 +95,14 @@ export default function App() {
             // possible, and on two from different providers so arrangement B
             // is a real split rather than the same lab chosen twice.
             const defaults = pickDefaultModels(result.models);
-            setSpeakerModel(defaults.speakerModel);
-            setJudgeModel(defaults.judgeModel);
+            setSingleModel(defaults.speakerModel);
+
+            // Arrangement B opens with distinct models already spread across
+            // the seats, so switching to it shows what it is for.
+            const ids = SPEAKERS.concat(JUDGES).map(function (agent) {
+                return agent.id;
+            });
+            setPerAgentModels(assignDistinctModels(result.models, ids));
         });
         return function () {
             cancelled = true;
@@ -153,16 +160,16 @@ export default function App() {
     // ---- the estimate shown beside the budget -----------------------------
     const estimate = useMemo(
         function () {
-            if (!speakerModel) {
+            if (!singleModel) {
                 return null;
             }
-            return planRun(chargeSheet, config, speakerModel, judgeModel || speakerModel);
+            return planRun(chargeSheet, config, singleModel, perAgentModels);
         },
-        [chargeSheet, config, speakerModel, judgeModel]
+        [chargeSheet, config, singleModel, perAgentModels]
     );
 
     const problems = validateChargeSheet(chargeSheet);
-    const canRun = problems.length === 0 && speakerModel !== null && !running;
+    const canRun = problems.length === 0 && singleModel !== null && !running;
 
     async function startRun() {
         if (problems.length > 0) {
@@ -181,8 +188,8 @@ export default function App() {
         const result = await runCase({
             chargeSheet: chargeSheet,
             config: config,
-            speakerModel: speakerModel,
-            judgeModel: judgeModel || speakerModel,
+            singleModel: singleModel,
+            perAgentModels: perAgentModels,
             budgetUsd: budgetUsd,
             onProgress: function (event) {
                 if (event.type === "call") {
@@ -298,10 +305,20 @@ export default function App() {
                             config={config}
                             onConfigChange={setConfig}
                             models={models}
-                            speakerModel={speakerModel}
-                            judgeModel={judgeModel}
-                            onSpeakerModelChange={setSpeakerModel}
-                            onJudgeModelChange={setJudgeModel}
+                            singleModel={singleModel}
+                            perAgentModels={perAgentModels}
+                            onSingleModelChange={setSingleModel}
+                            onPerAgentChange={function (agentId, model) {
+                                setPerAgentModels(function (current) {
+                                    return Object.assign({}, current, { [agentId]: model });
+                                });
+                            }}
+                            onSpreadModels={function () {
+                                const ids = SPEAKERS.concat(JUDGES).map(function (agent) {
+                                    return agent.id;
+                                });
+                                setPerAgentModels(assignDistinctModels(models, ids));
+                            }}
                             budgetUsd={budgetUsd}
                             onBudgetChange={setBudgetUsd}
                             estimate={estimate}

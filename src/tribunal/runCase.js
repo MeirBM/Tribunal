@@ -29,12 +29,35 @@ function newRunId() {
     return "case-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
 }
 
-// Which model each half of the panel uses, given the chosen arrangement.
-export function resolveModels(config, speakerModel, judgeModel) {
-    if (config === CONFIG_SINGLE) {
-        return { speakerModel: speakerModel, judgeModel: speakerModel };
-    }
-    return { speakerModel: speakerModel, judgeModel: judgeModel };
+/*
+ * Which model each of the seven agents runs on.
+ *
+ * Arrangement A points every seat at one model, so the only thing separating
+ * the seven voices is the system prompt. Arrangement B gives each seat its own
+ * entry, and the familiar "one model for the speakers, another for the judges"
+ * split is simply that map with two distinct values rather than seven.
+ */
+export function resolveAgentModels(config, singleModel, perAgent) {
+    const map = {};
+    const assign = function (agent) {
+        if (config === CONFIG_SINGLE) {
+            map[agent.id] = singleModel;
+            return;
+        }
+        map[agent.id] = (perAgent && perAgent[agent.id]) || singleModel;
+    };
+    SPEAKERS.forEach(assign);
+    JUDGES.forEach(assign);
+    return map;
+}
+
+// How many distinct models a run will actually touch. Reported, because it is
+// the number that says what the arrangement really did.
+export function distinctModelCount(agentModels) {
+    const ids = Object.keys(agentModels).map(function (key) {
+        return agentModels[key] ? agentModels[key].id : null;
+    });
+    return new Set(ids.filter(Boolean)).size;
 }
 
 /*
@@ -42,8 +65,8 @@ export function resolveModels(config, speakerModel, judgeModel) {
  * Exported so the screen can show the figure next to the budget cap while the
  * user is still choosing models.
  */
-export function planRun(chargeSheet, config, speakerModel, judgeModel) {
-    const models = resolveModels(config, speakerModel, judgeModel);
+export function planRun(chargeSheet, config, singleModel, perAgent) {
+    const agentModels = resolveAgentModels(config, singleModel, perAgent);
     const speakerPrompt = buildSpeakerPrompt(chargeSheet);
     const speakerPromptTokens = estimateTokens(speakerPrompt) + 400;
 
@@ -52,16 +75,16 @@ export function planRun(chargeSheet, config, speakerModel, judgeModel) {
     const judgePromptTokens = speakerPromptTokens + SPEECH_MAX_TOKENS * 4 + 400;
 
     const plan = [];
-    SPEAKERS.forEach(function () {
+    SPEAKERS.forEach(function (speaker) {
         plan.push({
-            model: models.speakerModel,
+            model: agentModels[speaker.id],
             promptTokens: speakerPromptTokens,
             maxTokens: SPEECH_MAX_TOKENS
         });
     });
-    JUDGES.forEach(function () {
+    JUDGES.forEach(function (judge) {
         plan.push({
-            model: models.judgeModel,
+            model: agentModels[judge.id],
             promptTokens: judgePromptTokens,
             maxTokens: VERDICT_MAX_TOKENS
         });
@@ -72,7 +95,8 @@ export function planRun(chargeSheet, config, speakerModel, judgeModel) {
         worstCaseUsd: estimateRunCost(plan),
         speakerPromptTokens: speakerPromptTokens,
         judgePromptTokens: judgePromptTokens,
-        models: models
+        agentModels: agentModels,
+        distinctModels: distinctModelCount(agentModels)
     };
 }
 
@@ -90,8 +114,8 @@ export async function runCase(options) {
     const budgetUsd = options.budgetUsd;
     const onProgress = options.onProgress || function () {};
 
-    const models = resolveModels(config, options.speakerModel, options.judgeModel);
-    const plan = planRun(chargeSheet, config, options.speakerModel, options.judgeModel);
+    const agentModels = resolveAgentModels(config, options.singleModel, options.perAgentModels);
+    const plan = planRun(chargeSheet, config, options.singleModel, options.perAgentModels);
 
     // The cap binds before the first call, not after the last one.
     if (plan.worstCaseUsd > budgetUsd) {
@@ -126,14 +150,15 @@ export async function runCase(options) {
         SPEAKERS.map(async function (speaker) {
             const callStarted = Date.now();
             const result = await callModel({
-                model: models.speakerModel.id,
+                model: agentModels[speaker.id].id,
                 system: speakerSystemPrompt(speaker, chargeSheet),
                 user: speakerPrompt,
                 maxTokens: SPEECH_MAX_TOKENS,
                 temperature: 0.8
             });
 
-            const cost = result.ok ? computeCallCost(result.usage, models.speakerModel) : 0;
+            const speakerModel = agentModels[speaker.id];
+            const cost = result.ok ? computeCallCost(result.usage, speakerModel) : 0;
 
             recordCall({
                 id: speaker.id,
@@ -141,8 +166,8 @@ export async function runCase(options) {
                 agent: speaker.name,
                 agentTitle: speaker.title,
                 role: speaker.role,
-                modelId: models.speakerModel.id,
-                modelName: models.speakerModel.name,
+                modelId: speakerModel.id,
+                modelName: speakerModel.name,
                 ok: result.ok,
                 truncated: result.ok && result.finishReason === "length",
                 error: result.ok ? null : result.error,
@@ -172,7 +197,7 @@ export async function runCase(options) {
                 truncated: result.ok && result.finishReason === "length",
                 text: result.ok ? result.text.trim() : "",
                 error: result.ok ? null : result.error,
-                modelId: models.speakerModel.id,
+                modelId: speakerModel.id,
                 elapsedMs: result.ok ? result.elapsedMs : 0
             };
         })
@@ -200,7 +225,8 @@ export async function runCase(options) {
                 speeches[0].error,
             chargeSheet: chargeSheet,
             config: config,
-            models: { speaker: models.speakerModel, judge: models.judgeModel },
+            agentModels: agentModels,
+            distinctModels: distinctModelCount(agentModels),
             speeches: speeches,
             rulings: [],
             calls: calls,
@@ -219,14 +245,15 @@ export async function runCase(options) {
         JUDGES.map(async function (judge) {
             const callStarted = Date.now();
             const result = await callModel({
-                model: models.judgeModel.id,
+                model: agentModels[judge.id].id,
                 system: judgeSystemPrompt(judge, chargeSheet),
                 user: judgePrompt,
                 maxTokens: VERDICT_MAX_TOKENS,
                 temperature: 0.4
             });
 
-            const cost = result.ok ? computeCallCost(result.usage, models.judgeModel) : 0;
+            const judgeModel = agentModels[judge.id];
+            const cost = result.ok ? computeCallCost(result.usage, judgeModel) : 0;
 
             if (!result.ok) {
                 recordCall({
@@ -235,8 +262,8 @@ export async function runCase(options) {
                     agent: judge.name,
                     agentTitle: judge.title,
                     role: "Judge",
-                    modelId: models.judgeModel.id,
-                    modelName: models.judgeModel.name,
+                    modelId: judgeModel.id,
+                    modelName: judgeModel.name,
                     ok: false,
                     error: result.error,
                     promptTokens: 0,
@@ -255,7 +282,7 @@ export async function runCase(options) {
                     ok: false,
                     failure: "call",
                     problem: result.error,
-                    modelId: models.judgeModel.id,
+                    modelId: judgeModel.id,
                     elapsedMs: 0
                 };
             }
@@ -284,8 +311,8 @@ export async function runCase(options) {
                 agent: judge.name,
                 agentTitle: judge.title,
                 role: "Judge",
-                modelId: models.judgeModel.id,
-                modelName: models.judgeModel.name,
+                modelId: judgeModel.id,
+                modelName: judgeModel.name,
                 ok: parsed.ok,
                 error: parsed.ok ? null : parsed.problem,
                 promptTokens: result.usage.promptTokens,
@@ -306,7 +333,7 @@ export async function runCase(options) {
                     failure: "form",
                     problem: parsed.problem,
                     raw: parsed.raw,
-                    modelId: models.judgeModel.id,
+                    modelId: judgeModel.id,
                     elapsedMs: result.elapsedMs
                 };
             }
@@ -322,7 +349,7 @@ export async function runCase(options) {
                 decisive: parsed.decisive,
                 reasoning: parsed.reasoning,
                 raw: parsed.raw,
-                modelId: models.judgeModel.id,
+                modelId: judgeModel.id,
                 elapsedMs: result.elapsedMs
             };
         })
@@ -339,7 +366,8 @@ export async function runCase(options) {
         createdAt: new Date().toISOString(),
         chargeSheet: chargeSheet,
         config: config,
-        models: { speaker: models.speakerModel, judge: models.judgeModel },
+        agentModels: agentModels,
+        distinctModels: distinctModelCount(agentModels),
         speeches: speeches,
         rulings: rulings,
         calls: calls,

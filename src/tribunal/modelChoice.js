@@ -105,3 +105,62 @@ export function pickDefaultModels(models) {
 
     return { speakerModel: speakerModel, judgeModel: judgeModel };
 }
+
+/*
+ * Assigns a model to each of the seven seats for arrangement B.
+ *
+ * Distinct models are handed out in ranked order and providers are spread as
+ * far as they go, because two models from one lab share more habits of
+ * reasoning than two names suggest. When fewer usable models exist than there
+ * are seats - which is the normal case on the free tier, where only a handful
+ * answer at any moment - the list wraps, and the caller is told how many
+ * distinct models it actually got rather than being left to assume seven.
+ */
+export function assignDistinctModels(models, agentIds) {
+    if (!models || models.length === 0 || !agentIds || agentIds.length === 0) {
+        return {};
+    }
+
+    const free = models.filter(function (model) {
+        return model.isFree;
+    });
+    const pool = (free.length >= 2 ? free : models)
+        .slice()
+        .sort(function (a, b) {
+            return score(b) - score(a);
+        });
+
+    // Walk providers round-robin so neighbouring seats rarely share a lab.
+    const byProvider = {};
+    pool.forEach(function (model) {
+        const provider = model.id.split("/")[0];
+        if (!byProvider[provider]) {
+            byProvider[provider] = [];
+        }
+        byProvider[provider].push(model);
+    });
+    const providers = Object.keys(byProvider);
+
+    const spread = [];
+    let depth = 0;
+    while (spread.length < pool.length) {
+        let added = false;
+        providers.forEach(function (provider) {
+            const model = byProvider[provider][depth];
+            if (model) {
+                spread.push(model);
+                added = true;
+            }
+        });
+        if (!added) {
+            break;
+        }
+        depth += 1;
+    }
+
+    const assignment = {};
+    agentIds.forEach(function (id, index) {
+        assignment[id] = spread[index % spread.length];
+    });
+    return assignment;
+}

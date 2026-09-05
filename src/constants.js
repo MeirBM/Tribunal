@@ -21,15 +21,19 @@ export const CALLS_PER_RUN = SPEAKER_COUNT + JUDGE_COUNT;
 
 /*
  * The two arrangements the project is asked to compare.
- *   SINGLE - one model does all seven calls; only the system prompts differ.
- *   SPLIT  - one model for the four speakers, another for the three judges.
+ *
+ *   SINGLE - one model does all seven calls, and the seven personalities come
+ *            entirely from the system prompts.
+ *   SPLIT  - every agent runs on its own model, chosen per seat. Pointing all
+ *            four representatives at one model and all three judges at another
+ *            is a special case of this rather than a separate arrangement.
  */
 export const CONFIG_SINGLE = "SINGLE";
 export const CONFIG_SPLIT = "SPLIT";
 
 export const CONFIG_LABELS = {
-    SINGLE: "A · One model for everyone",
-    SPLIT: "B · Separate models for speakers and judges"
+    SINGLE: "A · One model for all seven",
+    SPLIT: "B · A separate model for each of the seven"
 };
 
 /*
