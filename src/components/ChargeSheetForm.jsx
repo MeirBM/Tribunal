@@ -50,10 +50,11 @@ export const EXAMPLE_CASES = [
             "had passed legal review. She then copied 40,000 anonymised customer " +
             "records, along with the model's source code, and gave them to a " +
             "journalist. The story led to a regulatory investigation and the model " +
-            "was withdrawn. Her employment contract and the jurisdiction's trade " +
-            "secrets statute both plainly prohibit what she did, and the copied " +
+            "was withdrawn. Her employment contract contains a confidentiality " +
+            "clause, and the jurisdiction has a trade secrets statute. The copied " +
             "records included fields that could, when combined, re-identify some " +
-            "individuals.",
+            "individuals. No external whistleblower channel is described in the " +
+            "file, and no customer has been shown to have been re-identified.",
         question:
             "Is Ana Ruiz guilty of the unlawful disclosure of confidential company data?"
     },
