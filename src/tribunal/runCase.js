@@ -15,7 +15,12 @@ import {
     VERDICT_MAX_TOKENS,
     CALLS_PER_RUN
 } from "../constants.js";
-import { SPEAKERS, JUDGES, judgeSystemPrompt } from "./personas.js";
+import {
+    SPEAKERS,
+    JUDGES,
+    speakerSystemPrompt,
+    judgeSystemPrompt
+} from "./personas.js";
 import { buildSpeakerPrompt, buildJudgePrompt, parseVerdict, tallyVerdicts } from "./protocol.js";
 import { callModel } from "./client.js";
 import { computeCallCost, estimateTokens, estimateRunCost } from "../lib/money.js";
@@ -122,7 +127,7 @@ export async function runCase(options) {
             const callStarted = Date.now();
             const result = await callModel({
                 model: models.speakerModel.id,
-                system: speaker.systemPrompt,
+                system: speakerSystemPrompt(speaker, chargeSheet),
                 user: speakerPrompt,
                 maxTokens: SPEECH_MAX_TOKENS,
                 temperature: 0.8

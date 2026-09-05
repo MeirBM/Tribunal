@@ -93,41 +93,6 @@ export const EXAMPLE_CASES = [
             "the necessary defense of others and of the realm, given what he knew, " +
             "the scale of the threatened harm, the absence or presence of safer " +
             "alternatives, and his lack of formal authority?"
-    },
-    {
-        label: "The whistleblower",
-        defendant: "Ana Ruiz, senior data engineer at a health insurance company",
-        act:
-            "Ana Ruiz discovered that her employer's pricing model was using a " +
-            "proxy variable that raised premiums for residents of two specific " +
-            "postal districts, both of which are majority minority neighbourhoods. " +
-            "She raised it internally twice over four months and was told the model " +
-            "had passed legal review. She then copied 40,000 anonymised customer " +
-            "records, along with the model's source code, and gave them to a " +
-            "journalist. The story led to a regulatory investigation and the model " +
-            "was withdrawn. Her employment contract contains a confidentiality " +
-            "clause, and the jurisdiction has a trade secrets statute. The copied " +
-            "records included fields that could, when combined, re-identify some " +
-            "individuals. No external whistleblower channel is described in the " +
-            "file, and no customer has been shown to have been re-identified.",
-        question:
-            "Is Ana Ruiz guilty of the unlawful disclosure of confidential company data?"
-    },
-    {
-        label: "The autonomous vehicle",
-        defendant: "Meridian Systems, manufacturer of an autonomous delivery vehicle",
-        act:
-            "A Meridian delivery vehicle operating without a safety driver struck " +
-            "and seriously injured a cyclist who crossed against a signal at dusk. " +
-            "Internal documents show the perception team had logged 31 prior " +
-            "near-misses in low light involving cyclists, and had recommended " +
-            "restricting night operation until a sensor upgrade shipped. Management " +
-            "declined, citing a delivery commitment, and instead lowered the " +
-            "vehicle's operating speed at night by four kilometres per hour. The " +
-            "vehicle behaved exactly as designed and within every applicable " +
-            "regulation at the time of the collision.",
-        question:
-            "Is Meridian Systems criminally liable for the injury to the cyclist?"
     }
 ];
 

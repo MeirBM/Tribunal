@@ -59,8 +59,21 @@ export const VERDICT_MAX_TOKENS = 1600;
  * with "guilty" would be answering a different question from the one put.
  */
 export const VERDICT_SETS = {
-    GUILT: { positive: "GUILTY", negative: "NOT GUILTY" },
-    JUSTIFICATION: { positive: "JUSTIFIED", negative: "NOT JUSTIFIED" }
+    GUILT: {
+        positive: "GUILTY",
+        negative: "NOT GUILTY",
+        againstAccused: "GUILTY",
+        forAccused: "NOT GUILTY"
+    },
+    JUSTIFICATION: {
+        positive: "JUSTIFIED",
+        negative: "NOT JUSTIFIED",
+        // The seats do not swap with the vocabulary. A prosecution seat argues
+        // against the accused either way, and on this question that is the
+        // negative answer rather than the positive one.
+        againstAccused: "NOT JUSTIFIED",
+        forAccused: "JUSTIFIED"
+    }
 };
 
 export const DEFAULT_VERDICT_SET = "GUILT";
