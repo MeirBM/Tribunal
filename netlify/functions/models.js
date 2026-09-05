@@ -48,6 +48,22 @@ export default async function handler() {
     const list = Array.isArray(body.data) ? body.data : [];
 
     const models = list
+        .filter(function (entry) {
+            /*
+             * Only models that take text in and give nothing but text back.
+             *
+             * The zero-price test alone is not enough: OpenRouter's free tier
+             * also carries media models such as google/lyria-3-pro-preview,
+             * which is priced at zero and lists text among its outputs but
+             * answers with audio. Offering one of those in a model picker for
+             * a court produces a call that fails for reasons nobody can see
+             * from the screen.
+             */
+            const architecture = entry.architecture || {};
+            const input = architecture.input_modalities || [];
+            const output = architecture.output_modalities || [];
+            return input.indexOf("text") !== -1 && output.length === 1 && output[0] === "text";
+        })
         .map(function (entry) {
             const pricing = entry.pricing || {};
             const promptPrice = readPrice(pricing.prompt);

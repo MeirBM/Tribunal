@@ -106,6 +106,22 @@ Prices come from the live OpenRouter catalogue rather than a hard-coded table,
 because model names and prices there change from week to week and a stale price
 list makes the cost report wrong.
 
+### Free models are unreliable, and that is normal
+
+Free tiers on OpenRouter are queued behind paid traffic, gated, or withdrawn
+without notice. Pinging every free chat model in the catalogue on 4 September
+2026 gave **6 of 19 answering** — the rest returned an empty answer, a provider
+error, or "only available on an agentic plan".
+
+So: **use the "Test these models" button before convening.** It sends one
+eight-token call to each selected model. Finding out a model is down through a
+failed deliberation costs four speeches and leaves empty seats on the bench;
+finding out here costs nothing and takes a second.
+
+The pickers rank free models by a name heuristic (`src/tribunal/modelChoice.js`)
+and open on two from different providers, but a heuristic cannot know what is
+up right now. Only the ping can.
+
 ---
 
 ## How failure is handled

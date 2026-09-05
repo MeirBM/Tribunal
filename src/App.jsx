@@ -34,6 +34,7 @@ import {
     DATABASE_VERSION
 } from "./constants.js";
 import { loadModels } from "./tribunal/client.js";
+import { pickDefaultModels } from "./tribunal/modelChoice.js";
 import { planRun, runCase } from "./tribunal/runCase.js";
 import { openCasesDB } from "./lib/casesDb.js";
 import { formatUsd } from "./lib/money.js";
@@ -88,14 +89,11 @@ export default function App() {
             setCatalogueError(result.ok ? null : result.error);
 
             // Open on free models, since the brief asks for the cheapest run
-            // possible. Two different ones, so arrangement B is a real split
-            // rather than the same model chosen twice.
-            const free = result.models.filter(function (model) {
-                return model.isFree;
-            });
-            const preferred = free.length > 0 ? free : result.models;
-            setSpeakerModel(preferred[0] || null);
-            setJudgeModel(preferred[1] || preferred[0] || null);
+            // possible, and on two from different providers so arrangement B
+            // is a real split rather than the same lab chosen twice.
+            const defaults = pickDefaultModels(result.models);
+            setSpeakerModel(defaults.speakerModel);
+            setJudgeModel(defaults.judgeModel);
         });
         return function () {
             cancelled = true;

@@ -21,6 +21,17 @@ const MAX_COMPLETION_TOKENS = 2000;
 // The longest charge sheet plus speeches a single call may carry.
 const MAX_MESSAGE_CHARACTERS = 60000;
 
+/*
+ * The upstream call is abandoned after this long.
+ *
+ * It sits below the platform's own function timeout on purpose. When the
+ * platform kills a function it replies with its own error page, which is not
+ * the JSON shape the browser is parsing, so the run reports "status 502" and
+ * nobody can tell a slow model from a broken one. Cutting the call off here
+ * means a slow model produces a clear sentence instead.
+ */
+const UPSTREAM_TIMEOUT_MS = 24000;
+
 function jsonResponse(body, status) {
     return new Response(JSON.stringify(body), {
         status: status || 200,
@@ -91,9 +102,15 @@ export default async function handler(request) {
     }
 
     const startedAt = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(function () {
+        controller.abort();
+    }, UPSTREAM_TIMEOUT_MS);
+
     let upstream;
     try {
         upstream = await fetch(OPENROUTER_URL, {
+            signal: controller.signal,
             method: "POST",
             headers: {
                 Authorization: "Bearer " + apiKey,
@@ -113,12 +130,26 @@ export default async function handler(request) {
             })
         });
     } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === "AbortError") {
+            return jsonResponse(
+                {
+                    error:
+                        "The model did not answer within " +
+                        Math.round(UPSTREAM_TIMEOUT_MS / 1000) +
+                        " seconds and the call was cut off. Free models are often " +
+                        "queued behind other traffic; try again or pick another model."
+                },
+                504
+            );
+        }
         return jsonResponse(
             { error: "The call to OpenRouter did not go through: " + error.message },
             502
         );
     }
 
+    clearTimeout(timeoutId);
     const elapsedMs = Date.now() - startedAt;
     const raw = await upstream.text();
 
@@ -133,7 +164,20 @@ export default async function handler(request) {
     }
 
     if (!upstream.ok || body.error) {
-        const detail = body.error && body.error.message ? body.error.message : upstream.statusText;
+        const failure = body.error || {};
+        let detail = failure.message || upstream.statusText || "no reason given";
+
+        /*
+         * "Provider returned error" on its own tells the user nothing, and it
+         * is the message free tiers return most. The provider's own text sits
+         * in the metadata, so it is appended when there is one.
+         */
+        const metadata = failure.metadata || {};
+        const providerText = metadata.raw || metadata.provider_name || null;
+        if (providerText && String(providerText).indexOf(detail) === -1) {
+            detail += " (" + String(providerText).slice(0, 300) + ")";
+        }
+
         return jsonResponse(
             { error: "OpenRouter refused the call: " + detail, status: upstream.status },
             upstream.status === 429 ? 429 : 502

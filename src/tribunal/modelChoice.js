@@ -1,0 +1,101 @@
+/*
+ * modelChoice.js - which models the pickers should open on.
+ *
+ * The free tier is sorted alphabetically once price stops separating anything,
+ * and alphabetical order puts a code-completion model and a note-taking
+ * preview at the top. Neither writes a closing speech or a reasoned ruling, so
+ * the panel would open on two poor choices and the first run would look like a
+ * fault in the application.
+ *
+ * So free models are scored instead. The scoring is a heuristic over names and
+ * nothing more: OpenRouter does not publish what a model is good at, and a
+ * heuristic that is roughly right beats an alphabet that is reliably wrong.
+ */
+
+// Names that mark a model built for something other than open-ended reasoning.
+// A court needs prose and judgement, and none of these produce it well.
+const SPECIALIST_MARKERS = [
+    "code", "coder", "codestral", "safety", "guard", "moderation", "shield",
+    "embed", "rerank", "note", "clip", "tts", "whisper", "audio", "vision",
+    "ocr", "image", "diffusion", "translate", "math", "sql", "fin"
+];
+
+/*
+ * General-purpose families that write usable prose and hold a fixed answer
+ * format. Kept deliberately short: every name here has either been seen
+ * answering a judge prompt from this application or is a long-standing
+ * general instruct family. Guessing from a product name does not work - a
+ * plausible-sounding model that is gated or withdrawn scores well and then
+ * fails on the first call.
+ */
+const GENERAL_FAMILIES = [
+    "minimax", "nemotron", "laguna", "glm", "gemma", "llama", "qwen",
+    "deepseek", "mistral", "command", "phi", "olmo"
+];
+
+function score(model) {
+    const haystack = (model.id + " " + model.name).toLowerCase();
+    let points = 0;
+
+    SPECIALIST_MARKERS.forEach(function (marker) {
+        if (haystack.indexOf(marker) !== -1) {
+            points -= 40;
+        }
+    });
+
+    GENERAL_FAMILIES.forEach(function (family) {
+        if (haystack.indexOf(family) !== -1) {
+            points += 20;
+        }
+    });
+
+    // A preview or an experimental build is more likely to be withdrawn or
+    // rate-limited than a released one.
+    if (/preview|experimental|alpha|beta/.test(haystack)) {
+        points -= 12;
+    }
+
+    // A judge reads the charge sheet plus four speeches, so a short context is
+    // a real risk rather than a preference.
+    if (model.contextLength >= 128000) {
+        points += 6;
+    } else if (model.contextLength < 32000) {
+        points -= 25;
+    }
+
+    return points;
+}
+
+/*
+ * Picks the two models the pickers open on: the best free model for the
+ * speakers, and the best free model from a different provider for the judges.
+ *
+ * A different provider rather than merely a different name, because
+ * arrangement B exists to stop the judges inheriting the speakers' habits of
+ * reasoning, and two models from one lab share more of those than two names
+ * suggest.
+ */
+export function pickDefaultModels(models) {
+    if (!models || models.length === 0) {
+        return { speakerModel: null, judgeModel: null };
+    }
+
+    const free = models.filter(function (model) {
+        return model.isFree;
+    });
+    const pool = free.length >= 2 ? free : models;
+
+    const ranked = pool.slice().sort(function (a, b) {
+        return score(b) - score(a);
+    });
+
+    const speakerModel = ranked[0];
+    const speakerProvider = speakerModel.id.split("/")[0];
+
+    const judgeModel =
+        ranked.find(function (model) {
+            return model.id.split("/")[0] !== speakerProvider;
+        }) || ranked[1] || speakerModel;
+
+    return { speakerModel: speakerModel, judgeModel: judgeModel };
+}

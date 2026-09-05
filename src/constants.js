@@ -53,37 +53,43 @@ export const ALLOWED_VERDICTS = [VERDICT_GUILTY, VERDICT_NOT_GUILTY];
 // reasons is not a weaker verdict; it is a malformed answer.
 export const MINIMUM_REASONS = 2;
 
-// Models used when the live catalogue cannot be reached. Free tiers on
-// OpenRouter, so a fallback run still costs nothing.
+/*
+ * Models used when the live catalogue cannot be reached.
+ *
+ * These are free tiers, so a fallback run still costs nothing, and they were
+ * each confirmed to answer rather than chosen from a list. Free models on
+ * OpenRouter come and go, so treat this as a lifeboat and not a
+ * recommendation - the pickers should normally be showing the live catalogue.
+ */
 export const FALLBACK_MODELS = [
     {
-        id: "meta-llama/llama-3.3-70b-instruct:free",
-        name: "Llama 3.3 70B Instruct (free)",
-        contextLength: 65536,
+        id: "minimax/minimax-m3:free",
+        name: "MiniMax M3 (free)",
+        contextLength: 1048576,
         promptPrice: 0,
         completionPrice: 0,
         isFree: true
     },
     {
-        id: "deepseek/deepseek-chat-v3-0324:free",
-        name: "DeepSeek V3 0324 (free)",
-        contextLength: 65536,
+        id: "nvidia/nemotron-3-super-120b-a12b:free",
+        name: "Nemotron 3 Super 120B (free)",
+        contextLength: 262144,
         promptPrice: 0,
         completionPrice: 0,
         isFree: true
     },
     {
-        id: "mistralai/mistral-small-3.1-24b-instruct:free",
-        name: "Mistral Small 3.1 24B (free)",
-        contextLength: 96000,
+        id: "nvidia/nemotron-3.5-lightning:free",
+        name: "Nemotron 3.5 Lightning (free)",
+        contextLength: 1000000,
         promptPrice: 0,
         completionPrice: 0,
         isFree: true
     },
     {
-        id: "qwen/qwen-2.5-72b-instruct:free",
-        name: "Qwen 2.5 72B Instruct (free)",
-        contextLength: 32768,
+        id: "poolside/laguna-s-2.1:free",
+        name: "Laguna S 2.1 (free)",
+        contextLength: 262144,
         promptPrice: 0,
         completionPrice: 0,
         isFree: true

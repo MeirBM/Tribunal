@@ -11,6 +11,7 @@
 
 import React from "react";
 import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
 import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -32,7 +33,8 @@ import {
     MAX_BUDGET_USD,
     CALLS_PER_RUN
 } from "../constants.js";
-import { formatUsd } from "../lib/money.js";
+import { formatUsd, formatDuration } from "../lib/money.js";
+import { pingModel } from "../tribunal/client.js";
 
 // One row of the model list: the name, then what it costs per million tokens,
 // which is the unit the prices are actually readable in.
@@ -88,6 +90,79 @@ function ModelPicker(props) {
             }}
             sx={{ minWidth: 260, flexGrow: 1 }}
         />
+    );
+}
+
+/*
+ * Tries the chosen models with one eight-token call each.
+ *
+ * Roughly half the free models on OpenRouter refuse or rate-limit at any given
+ * moment. Discovering that through a failed deliberation costs four speeches
+ * and leaves empty seats on the bench; discovering it here costs nothing and
+ * takes a second.
+ */
+function ModelTester(props) {
+    const [state, setState] = React.useState(null);
+    const [busy, setBusy] = React.useState(false);
+
+    const targets = React.useMemo(
+        function () {
+            const list = [];
+            if (props.speakerModel) {
+                list.push({ label: props.splitConfig ? "Speakers" : "All seven", model: props.speakerModel });
+            }
+            if (props.splitConfig && props.judgeModel && props.judgeModel.id !== (props.speakerModel || {}).id) {
+                list.push({ label: "Judges", model: props.judgeModel });
+            }
+            return list;
+        },
+        [props.speakerModel, props.judgeModel, props.splitConfig]
+    );
+
+    async function test() {
+        setBusy(true);
+        setState(null);
+        const results = [];
+        for (let index = 0; index < targets.length; index += 1) {
+            const target = targets[index];
+            const outcome = await pingModel(target.model.id);
+            results.push({ label: target.label, id: target.model.id, ...outcome });
+        }
+        setState(results);
+        setBusy(false);
+    }
+
+    if (targets.length === 0) {
+        return null;
+    }
+
+    return (
+        <Box sx={{ mt: 2 }}>
+            <Button size="small" variant="outlined" onClick={test} disabled={busy || props.disabled}>
+                {busy ? "Testing…" : "Test these models"}
+            </Button>
+            {state ? (
+                <Stack gap={0.5} sx={{ mt: 1.5 }}>
+                    {state.map(function (result) {
+                        return (
+                            <Alert
+                                key={result.id}
+                                severity={result.ok ? "success" : "error"}
+                                icon={false}
+                                sx={{ py: 0.25 }}
+                            >
+                                <Typography variant="body2">
+                                    <strong>{result.label}</strong> · {result.id} —{" "}
+                                    {result.ok
+                                        ? "answered in " + formatDuration(result.elapsedMs)
+                                        : result.error}
+                                </Typography>
+                            </Alert>
+                        );
+                    })}
+                </Stack>
+            ) : null}
+        </Box>
     );
 }
 
@@ -171,6 +246,13 @@ export default function ConfigPanel(props) {
                         pickers are showing a short built-in list of free models instead.
                     </Alert>
                 ) : null}
+
+                <ModelTester
+                    speakerModel={props.speakerModel}
+                    judgeModel={props.judgeModel}
+                    splitConfig={isSplit}
+                    disabled={props.disabled}
+                />
 
                 <Divider sx={{ my: 2 }} />
 
