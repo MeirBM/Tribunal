@@ -273,7 +273,7 @@ export default function ArrangementDiagram(props) {
                 sx={{ display: "block", mt: 1.5, lineHeight: 1.5 }}
             >
                 {single
-                    ? "One model produces all seven voices, so the bench shares whatever blind spot that model brought. Three judges that agree by construction tell you nothing."
+                    ? "One model produces all seven voices, and only the prompts separate them. Judges on one model tend to agree, because they share whatever blind spot that model brought, so agreement here is weaker evidence than the same agreement reached on different models. This is the baseline arrangement B is measured against."
                     : distinct === 1
                       ? "Every seat is pointed at the same model, so this is arrangement A wearing arrangement B's label."
                       : distinct +

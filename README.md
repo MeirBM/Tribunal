@@ -174,7 +174,14 @@ heading has "Aaron".
 |---|---|---|
 | Models | one | up to seven |
 | What differs between the seven | only the system prompts | the prompts *and* the machine behind each |
-| The risk it addresses | none — the whole panel shares one model's blind spot | seats on different models do not inherit each other's habits of reasoning |
+| What it isolates | the prompts, with the model held constant — so a difference between two voices is the persona and nothing else | the prompts *and* the model, so seats do not inherit each other's habits of reasoning |
+| What agreement is worth | less: judges on one model tend to agree, sharing whatever blind spot that model brought | more: models that differ genuinely, disagreeing, mark a case as hard |
+
+Neither arrangement is the right one. A is the baseline B is read against: it
+holds the model still so the seven personas can be seen doing their own work,
+and it is the cheaper of the two to run. B is where a disagreement starts to
+carry information. Running the same case through both, and comparing, is the
+point of building both.
 
 Arrangement B gives every seat its own picker. The familiar "one model for the
 speakers, another for the judges" split is a special case of B — that map with
