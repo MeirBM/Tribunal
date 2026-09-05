@@ -118,7 +118,18 @@ function readVerdict(line, verdicts) {
  * that nobody reached.
  */
 const TEMPLATE_LINE =
-    /\b(NOT\s+)?(GUILTY|JUSTIFIED)\s+or\s+(NOT\s+)?(GUILTY|JUSTIFIED)\b|a whole number from|the name of the speaker/i;
+    /\b(NOT\s+)?(GUILTY|JUSTIFIED)\s*(?:\bor\b|\/|\|)\s*(NOT\s+)?(GUILTY|JUSTIFIED)\b|a whole number from|the name of the speaker/i;
+
+/*
+ * Markdown decoration a model puts in front of a heading. Stripped before a
+ * label is matched, because "## VERDICT: JUSTIFIED" is a judge announcing a
+ * verdict and not a judge failing to.
+ *
+ * It is removed into a separate variable rather than out of the line itself,
+ * so that a bullet under REASONS is still a bullet when the reason list is
+ * read further down.
+ */
+const HEADING_MARK = /^(?:#{1,6}\s*|>\s*|[-*]\s+)/;
 
 const PLACEHOLDER_REASON =
     /^(first|second|third)\s+reason$|^further reasons|^one paragraph saying/i;
@@ -140,7 +151,10 @@ export function parseVerdict(text, chargeSheet) {
     let startIndex = 0;
     let found = false;
     for (let index = 0; index < allLines.length; index += 1) {
-        const candidate = allLines[index].trim().replace(/\*\*/g, "");
+        const candidate = allLines[index]
+            .trim()
+            .replace(/\*\*/g, "")
+            .replace(HEADING_MARK, "");
         if (/^\s*VERDICT\s*[:\-]/i.test(candidate) && !TEMPLATE_LINE.test(candidate)) {
             startIndex = index;
             found = true;
@@ -164,6 +178,10 @@ export function parseVerdict(text, chargeSheet) {
         // before anything is matched, and "**VERDICT:**" reads the same as
         // "VERDICT:".
         const trimmed = line.trim().replace(/\*\*/g, "").replace(/__/g, "");
+        // Labels are matched against the undecorated line; the reason list
+        // further down still reads the decorated one, so a bullet stays a
+        // bullet.
+        const unmarked = trimmed.replace(HEADING_MARK, "");
         if (trimmed === "") {
             if (section === "reasoning") {
                 reasoningLines.push("");
@@ -171,14 +189,31 @@ export function parseVerdict(text, chargeSheet) {
             continue;
         }
 
-        const verdictMatch = /^\**\s*VERDICT\s*\**\s*[:\-]\s*(.+)$/i.exec(trimmed);
+        const verdictMatch = /^\**\s*VERDICT\s*\**\s*[:\-]\s*(.+)$/i.exec(unmarked);
         if (verdictMatch) {
+            /*
+             * A restated instruction is not a ruling, and this is the check
+             * that was missing.
+             *
+             * Choosing where to start reading already skipped template lines,
+             * so a judge that restated the form BEFORE ruling was handled. A
+             * judge that ruled and then restated it afterwards was not: this
+             * loop overwrote the real verdict with the template, and because a
+             * template line names both answers, the negative-first rule
+             * resolved it to the negative every time. A judge who found for
+             * the positive was published as having found against it, with
+             * every appearance of success. Skip the line; the verdict already
+             * read stands.
+             */
+            if (TEMPLATE_LINE.test(unmarked)) {
+                continue;
+            }
             verdict = readVerdict(verdictMatch[1], verdicts);
             section = "none";
             continue;
         }
 
-        const confidenceMatch = /^\**\s*CONFIDENCE\s*\**\s*[:\-]\s*(\d{1,3})/i.exec(trimmed);
+        const confidenceMatch = /^\**\s*CONFIDENCE\s*\**\s*[:\-]\s*(\d{1,3})/i.exec(unmarked);
         if (confidenceMatch) {
             const value = Number(confidenceMatch[1]);
             confidence = value >= 0 && value <= 100 ? value : null;
@@ -186,12 +221,12 @@ export function parseVerdict(text, chargeSheet) {
             continue;
         }
 
-        if (/^\**\s*REASONS?\s*\**\s*[:\-]?\s*$/i.test(trimmed)) {
+        if (/^\**\s*REASONS?\s*\**\s*[:\-]?\s*$/i.test(unmarked)) {
             section = "reasons";
             continue;
         }
 
-        const decisiveMatch = /^\**\s*DECISIVE\s*(?:SPEECH|SPEAKER)?\s*\**\s*[:\-]\s*(.+)$/i.exec(trimmed);
+        const decisiveMatch = /^\**\s*DECISIVE\s*(?:SPEECH|SPEAKER)?\s*\**\s*[:\-]\s*(.+)$/i.exec(unmarked);
         if (decisiveMatch) {
             const value = decisiveMatch[1].replace(/[*_`]/g, "").trim();
             decisive = /^none$/i.test(value) ? null : value;
@@ -199,7 +234,7 @@ export function parseVerdict(text, chargeSheet) {
             continue;
         }
 
-        const reasoningMatch = /^\**\s*REASONING\s*\**\s*[:\-]\s*(.*)$/i.exec(trimmed);
+        const reasoningMatch = /^\**\s*REASONING\s*\**\s*[:\-]\s*(.*)$/i.exec(unmarked);
         if (reasoningMatch) {
             section = "reasoning";
             if (reasoningMatch[1].trim() !== "") {

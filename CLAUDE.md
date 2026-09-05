@@ -21,8 +21,13 @@ that cost us most repeated at the end.
    rulings. If a change makes it more, the change is wrong.
 5. **Write every correction into this file as a rule.** Not "the judge returned
    prose again" — "demand the fixed form twice."
-6. **Run `npm run build` before every commit.** The pre-commit hook scans for
-   secrets; it does not compile.
+6. **Never edit a test to make it pass.** The suite in `tests/` was written
+   from `docs/spec.md` by an agent that never read this source. A failure means
+   the code and the specification disagree — decide which is wrong and fix that
+   one. Conforming the test to the code destroys the only thing the suite is
+   worth.
+7. **Run `npm run build` before every commit.** The hook runs the tests and the
+   secret scan; it does not compile.
 
 ---
 
@@ -44,6 +49,8 @@ Deployed at `tribunallm.netlify.app`.
 ```
 npm run dev       # netlify dev — the only way the /api functions work
 npm run build     # vite build; run before every commit
+npm test          # the specification suite; the pre-commit hook runs this
+npm run verify    # bundle and full-history credential scan (slow; CI, releases)
 npm run preview
 ```
 
@@ -76,7 +83,9 @@ multi-agent arrangement).
 
 ## Conventions
 
-- Plain JavaScript, ES modules, no TypeScript, no test framework yet.
+- Plain JavaScript, ES modules, no TypeScript.
+- Tests use Node's built-in runner (`node --test`) and `node:assert/strict`.
+  No test framework, no new dependencies.
 - MUI 6 for everything visual. Styling goes in `sx`, never in `style={{}}`.
 - Function declarations over arrow assignments in the tribunal modules.
 - Comments say *why*. The code already says what.

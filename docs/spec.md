@@ -3,7 +3,8 @@
 The primary artefact. Module 10's five parts. When this document and the code
 disagree, this document is what gets rewritten first, and the code follows.
 
-Version 1 · superseded nothing · written 05.09.2026
+Version 2 · written 05.09.2026 · revised the same day, after the
+specification suite found five defects the code had been read past
 
 ---
 
@@ -82,13 +83,30 @@ plainly rather than dressed up.
   templates, truncated output, markdown-bolded headings — each of which found a
   real bug.
 
+- **The suite in `tests/`.** 247 tests, run by `npm test` on Node's built-in
+  runner. It was written from this document and `docs/interfaces.md` by an
+  agent that was not permitted to read `src/`, so it checks what this
+  specification asked for rather than what the code happens to do. Each test
+  names the criterion or pitfall it covers.
+- **`npm run verify`** for S9 and S10, which are properties of the build output
+  and of git history rather than of any function.
+- **The pre-commit hook runs the suite** and refuses the commit on a failure.
+  No gate, no merge.
+
+**What the first run of that suite found.** Sixteen failures, of which five
+were real defects in the code — including a judge's ruling being published as
+its exact opposite. They are recorded as pitfalls 1a, 5a, 8a and 15a below.
+Two more were errors in `docs/interfaces.md` rather than in the code. This is
+the argument for the method: every one of these had been read past by someone
+who already knew what the code did.
+
 **Missing, and owed:**
-- **No automated test suite exists.** S1–S15 above are checkable by inspection
-  but nothing checks them mechanically, so nothing stops a regression.
-- The tests, when written, must be written **from this document by someone who
-  has not read the implementation** — otherwise they will check what the code
-  does rather than what the specification wanted, and pass while being useless.
-- No merge gate beyond the secret scan.
+- `client.js` is untested — it performs `fetch`, so it needs a stub server or
+  an injected transport of the kind `runCase` now has.
+- `casesDb.js` is untested; it needs IndexedDB.
+- Nothing in `src/components/` is tested; that needs a DOM.
+- No coverage measurement, deliberately: coverage records which lines ran, not
+  whether anything was checked.
 
 ## 5. Known pitfalls
 
@@ -130,3 +148,39 @@ we hit them.
 14. **Telling an agent to report prompt-injection attempts causes it to invent
     one.** Require quotable words. Telling it to confirm the absence causes it
     to announce that instead. Require silence.
+
+---
+
+Found by the suite described in part 4, on its first run. Each was a live
+defect, not a hypothetical.
+
+15. **Pitfall 1 was only half fixed, and the unfixed half inverted verdicts.**
+    Template lines were filtered when choosing *where to start reading*, so a
+    judge that restated the form before ruling was handled. A judge that ruled
+    and then restated the form afterwards was not: the parse loop overwrote the
+    real verdict with the template, and because a template line names both
+    answers, the negative-first rule of pitfall 2 resolved it to the negative
+    every time. `JUSTIFIED` was published as `NOT JUSTIFIED`, `GUILTY` as
+    `NOT GUILTY`, with `ok: true` and no sign anything had gone wrong. The
+    filter must be applied wherever a verdict line is read, not only where
+    reading begins.
+16. **`[JUSTIFIED / NOT JUSTIFIED]` is a template too.** The pattern only knew
+    the word "or", so a slash- or pipe-separated placeholder was read as an
+    answer, and a trailing one destroyed an otherwise good ruling.
+17. **A charge sheet with no question bought seven model calls.** The sheet was
+    never checked for its third part, so a court sat, four representatives
+    addressed nothing, three judges ruled on it, and roughly a seventh of the
+    day's free-tier requests was spent answering a question nobody asked.
+18. **The budget cap was enforced only by the browser control that set it.**
+    `runCase` refused correctly against whatever number it was handed, but
+    never bounded that number by `MAX_BUDGET_USD` — which contradicts part 3's
+    own rule that the browser enforces no rule that matters.
+19. **Ranking routers last still let them be chosen.** They scored badly enough
+    to lose to any real model, so a mixed catalogue was safe; a catalogue that
+    offered nothing else seated all seven agents on routers, and arrangement B
+    then reported seven distinct models that were one model wearing seven
+    names. A router must be excluded, not merely disfavoured.
+20. **`## VERDICT: JUSTIFIED` was read as no verdict at all.** Bolding had been
+    fixed when it caused a real failure; the sibling markdown decorations —
+    heading hashes, blockquote markers, list dashes — had not, and each one
+    turned a delivered ruling into a reported failure.

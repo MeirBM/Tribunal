@@ -73,6 +73,21 @@ function score(model) {
 }
 
 /*
+ * Routers are removed from consideration rather than merely ranked last.
+ *
+ * A router picks a different model per call behind one id, so seven seats
+ * pointed at routers report seven distinct models and are not distinct at all
+ * - which is the one thing arrangement B exists to measure. Ranking them last
+ * left them selectable whenever the catalogue offered nothing else, and a
+ * silently meaningless comparison is worse than an empty picker that says so.
+ */
+function selectable(models) {
+    return (models || []).filter(function (model) {
+        return !model.isRouter;
+    });
+}
+
+/*
  * Picks the two models the pickers open on: the best free model for the
  * speakers, and the best free model from a different provider for the judges.
  *
@@ -82,14 +97,15 @@ function score(model) {
  * suggest.
  */
 export function pickDefaultModels(models) {
-    if (!models || models.length === 0) {
+    const usable = selectable(models);
+    if (usable.length === 0) {
         return { speakerModel: null, judgeModel: null };
     }
 
-    const free = models.filter(function (model) {
+    const free = usable.filter(function (model) {
         return model.isFree;
     });
-    const pool = free.length >= 2 ? free : models;
+    const pool = free.length >= 2 ? free : usable;
 
     const ranked = pool.slice().sort(function (a, b) {
         return score(b) - score(a);
@@ -117,14 +133,15 @@ export function pickDefaultModels(models) {
  * distinct models it actually got rather than being left to assume seven.
  */
 export function assignDistinctModels(models, agentIds) {
-    if (!models || models.length === 0 || !agentIds || agentIds.length === 0) {
+    const usable = selectable(models);
+    if (usable.length === 0 || !agentIds || agentIds.length === 0) {
         return {};
     }
 
-    const free = models.filter(function (model) {
+    const free = usable.filter(function (model) {
         return model.isFree;
     });
-    const pool = (free.length >= 2 ? free : models)
+    const pool = (free.length >= 2 ? free : usable)
         .slice()
         .sort(function (a, b) {
             return score(b) - score(a);

@@ -37,9 +37,15 @@ part that has to be openable rather than claimed.
 | [`docs/problem.md`](docs/problem.md) | Problem statement, stakeholders, definition of done, out of scope — each with its test |
 | [`docs/spec.md`](docs/spec.md) | The specification: goal and reason, fifteen checkable criteria, architectural boundaries, validation, known pitfalls |
 | [`docs/coordination.md`](docs/coordination.md) | The multi-agent arrangement: patterns, each agent's role and boundary, how work passes, what happens when one fails, what it costs and buys |
+| [`docs/interfaces.md`](docs/interfaces.md) | The exported surface and data shapes — written so the suite could be built against the specification without reading the source |
 
 The specification is the primary artefact. When it and the code disagree, the
 specification is what gets rewritten first.
+
+The tests in `tests/` were written from `docs/spec.md` and `docs/interfaces.md`
+by an agent that was not allowed to read `src/`, so they check what the
+specification asked for rather than what the code happens to do. `npm test`
+runs them and the pre-commit hook refuses a commit that fails them.
 
 ---
 

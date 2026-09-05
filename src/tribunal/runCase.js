@@ -13,7 +13,8 @@ import {
     CONFIG_SINGLE,
     SPEECH_MAX_TOKENS,
     VERDICT_MAX_TOKENS,
-    CALLS_PER_RUN
+    CALLS_PER_RUN,
+    MAX_BUDGET_USD
 } from "../constants.js";
 import {
     SPEAKERS,
@@ -107,18 +108,47 @@ export function planRun(chargeSheet, config, singleModel, perAgent) {
  * the panel working instead of a spinner over a blank page. The function
  * never throws for an ordinary failure: a speaker or judge that fails comes
  * back marked as failed, and the run reports itself incomplete.
+ *
+ * options.call replaces the model call. It defaults to the real one and exists
+ * so a test can drive a whole deliberation without a network, which is the
+ * only way the wave structure and the budget refusal can be checked at all.
  */
 export async function runCase(options) {
     const chargeSheet = options.chargeSheet;
     const config = options.config;
     const budgetUsd = options.budgetUsd;
     const onProgress = options.onProgress || function () {};
+    const call = options.call || callModel;
+
+    /*
+     * A sheet with no question asks nothing, and a court that sits on it
+     * spends seven calls to answer a question nobody put. On free models that
+     * is seven of about fifty requests for the day, gone. Checked before the
+     * budget, because this run is worth nothing at any price.
+     */
+    if (!chargeSheet || String(chargeSheet.question || "").trim() === "") {
+        return {
+            ok: false,
+            refused: true,
+            error:
+                "This run was refused before any call was made. The charge " +
+                "sheet carries no question, so there is nothing for the panel " +
+                "to answer. State the exact question before the court."
+        };
+    }
+
+    /*
+     * The cap is bounded here rather than only on the control that sets it.
+     * The screen is a convenience; a limit that only exists in the browser is
+     * not a limit, because the browser is not where the rule has to hold.
+     */
+    const cap = Math.min(Number(budgetUsd) || 0, MAX_BUDGET_USD);
 
     const agentModels = resolveAgentModels(config, options.singleModel, options.perAgentModels);
     const plan = planRun(chargeSheet, config, options.singleModel, options.perAgentModels);
 
     // The cap binds before the first call, not after the last one.
-    if (plan.worstCaseUsd > budgetUsd) {
+    if (plan.worstCaseUsd > cap) {
         return {
             ok: false,
             refused: true,
@@ -126,7 +156,7 @@ export async function runCase(options) {
                 "This run was refused before any call was made. At worst it would cost " +
                 plan.worstCaseUsd.toFixed(4) +
                 " dollars, and the cap for one run is " +
-                budgetUsd.toFixed(2) +
+                cap.toFixed(2) +
                 ". Choose cheaper models or raise the cap."
         };
     }
@@ -149,7 +179,7 @@ export async function runCase(options) {
     const speeches = await Promise.all(
         SPEAKERS.map(async function (speaker) {
             const callStarted = Date.now();
-            const result = await callModel({
+            const result = await call({
                 model: agentModels[speaker.id].id,
                 system: speakerSystemPrompt(speaker, chargeSheet),
                 user: speakerPrompt,
@@ -244,7 +274,7 @@ export async function runCase(options) {
     const rulings = await Promise.all(
         JUDGES.map(async function (judge) {
             const callStarted = Date.now();
-            const result = await callModel({
+            const result = await call({
                 model: agentModels[judge.id].id,
                 system: judgeSystemPrompt(judge, chargeSheet),
                 user: judgePrompt,
@@ -373,7 +403,7 @@ export async function runCase(options) {
         calls: calls,
         totals: totals,
         tally: tallyVerdicts(rulings, chargeSheet),
-        budgetUsd: budgetUsd,
+        budgetUsd: cap,
         spentBeforeJudges: spentSoFar
     };
 }

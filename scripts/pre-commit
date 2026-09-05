@@ -40,4 +40,33 @@ if [ -n "$FOUND" ]; then
     exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# The specification's criteria, checked mechanically.
+#
+# Cheap gates first and the human gate last: these need nobody present, so
+# they run on every commit rather than waiting for someone to remember. A
+# standard that depends on willpower at a late hour is not a control.
+#
+# Only the unit suite runs here. The history scan in scripts/verify-repo.sh
+# walks every commit ever made and is too slow to pay for on each commit.
+if [ -d tests ] && [ -n "$(ls -A tests 2>/dev/null)" ]; then
+    printf 'Running the specification suite ... '
+    if OUTPUT=$(npm test --silent 2>&1); then
+        echo 'passed.'
+    else
+        echo ''
+        echo ''
+        echo "$OUTPUT" | tail -40
+        echo ''
+        echo 'COMMIT REFUSED - the specification suite failed.'
+        echo ''
+        echo '  These tests were written from docs/spec.md by an agent that'
+        echo '  never read the implementation, so a failure means the code and'
+        echo '  the specification disagree. Decide which one is wrong and fix'
+        echo '  that one. Do not edit the test to match the code.'
+        echo ''
+        exit 1
+    fi
+fi
+
 exit 0

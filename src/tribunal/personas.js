@@ -265,9 +265,10 @@ export function buildVerdictForm(verdicts) {
 /*
  * Composes a representative's system prompt for a particular case.
  *
- * The seat decides which answer they argue for, and the vocabulary comes from
- * the case: a prosecution seat argues against the accused whether the court is
- * asking about guilt or about justification, and those are different words.
+ * The seat decides when this person speaks and on whose application they were
+ * called - not what they conclude. The vocabulary comes from the case, because
+ * a court asking about guilt and a court asking about justification want
+ * different words for the same answer.
  */
 export function speakerSystemPrompt(speaker, chargeSheet) {
     const verdicts = verdictsFor(chargeSheet);
