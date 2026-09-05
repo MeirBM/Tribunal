@@ -80,7 +80,17 @@ export const VERDICT_SETS = {
     }
 };
 
-export const DEFAULT_VERDICT_SET = "GUILT";
+/*
+ * What a charge sheet answers in when it does not say.
+ *
+ * This is the Tribunal, and the Tribunal decides whether an act was justified.
+ * The guilt vocabulary is kept because the machinery below it is what stopped
+ * the court answering in words its own question never used, and a charge sheet
+ * that genuinely asks about guilt only needs the one field - but it is not
+ * offered as a choice on screen, because on this case there is only one right
+ * setting and a control with one right setting is a way to get it wrong.
+ */
+export const DEFAULT_VERDICT_SET = "JUSTIFICATION";
 
 // Resolves a charge sheet to the pair its question is actually asking for.
 export function verdictsFor(chargeSheet) {

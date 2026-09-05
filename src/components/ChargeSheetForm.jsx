@@ -17,11 +17,9 @@ import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 
-import { VERDICT_SETS, DEFAULT_VERDICT_SET } from "../constants.js";
+import { verdictsFor } from "../constants.js";
 import { EXAMPLE_CASES } from "../tribunal/cases.js";
 
 export { EXAMPLE_CASES };
@@ -55,6 +53,7 @@ export function validateChargeSheet(sheet) {
 export default function ChargeSheetForm(props) {
     const sheet = props.chargeSheet;
     const problems = props.showProblems ? validateChargeSheet(sheet) : [];
+    const verdicts = verdictsFor(sheet);
 
     function update(field) {
         return function (event) {
@@ -93,7 +92,7 @@ export default function ChargeSheetForm(props) {
                                             defendant: example.defendant,
                                             act: example.act,
                                             question: example.question,
-                                            verdictSet: example.verdictSet || DEFAULT_VERDICT_SET
+                                            verdictSet: example.verdictSet
                                         });
                                     }}
                                 />
@@ -124,29 +123,16 @@ export default function ChargeSheetForm(props) {
                         helperText={sheet.act.length + " characters"}
                     />
                     <Box>
-                        <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                            The court answers in these words
+                        {/* Stated, not chosen. The vocabulary follows the case,
+                            and showing it keeps the reader clear on what the
+                            bench is about to answer without offering a switch
+                            whose other setting is simply wrong here. */}
+                        <Typography variant="caption" color="text.secondary" display="block">
+                            The court will answer
                         </Typography>
-                        <ToggleButtonGroup
-                            size="small"
-                            exclusive
-                            value={sheet.verdictSet || DEFAULT_VERDICT_SET}
-                            onChange={function (event, value) {
-                                if (value) {
-                                    props.onChange(Object.assign({}, sheet, { verdictSet: value }));
-                                }
-                            }}
-                            disabled={props.disabled}
-                        >
-                            {Object.keys(VERDICT_SETS).map(function (key) {
-                                const pair = VERDICT_SETS[key];
-                                return (
-                                    <ToggleButton key={key} value={key} sx={{ textTransform: "none" }}>
-                                        {pair.positive.toLowerCase()} / {pair.negative.toLowerCase()}
-                                    </ToggleButton>
-                                );
-                            })}
-                        </ToggleButtonGroup>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {verdicts.positive.toLowerCase()} / {verdicts.negative.toLowerCase()}
+                        </Typography>
                     </Box>
 
                     <TextField

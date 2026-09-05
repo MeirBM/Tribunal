@@ -84,11 +84,16 @@ genuinely arguable rather than pre-decided.
 The form accepts any charge sheet typed into it: a defendant, the act and case
 details, and the exact question the court must answer.
 
-**The court answers in the vocabulary the question requires.** T-001 asks
-whether a killing was *justified*, so the bench returns **justified / not
-justified**. A charge of wrongdoing returns **guilty / not guilty**. The toggle
-sits on the form. This is not cosmetic: a court that answers a question nobody
-asked is answering a different case.
+**The court answers in the vocabulary the question requires.** This Tribunal
+asks whether an act was *justified*, so the bench returns **justified / not
+justified**, and the form states that rather than offering it as a choice — on
+this case there is only one right setting, and a control with one right setting
+is a way to get it wrong.
+
+The guilt vocabulary (**guilty / not guilty**) is still expressible: a charge
+sheet that genuinely asks about guilt sets one field. The machinery matters
+even with a single case, because it is what stopped the court answering in
+words its own question never used.
 
 ---
 
