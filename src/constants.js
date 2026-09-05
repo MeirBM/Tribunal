@@ -41,7 +41,7 @@ export const DEFAULT_BUDGET_USD = 0.25;
 export const MAX_BUDGET_USD = 5;
 
 // How many completion tokens each kind of call may produce.
-export const SPEECH_MAX_TOKENS = 900;
+export const SPEECH_MAX_TOKENS = 1200;
 /*
  * Judges get a larger allowance than speakers because several free models
  * reason at length before they answer, and an answer cut off mid-thought is a

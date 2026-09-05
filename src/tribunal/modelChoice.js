@@ -37,6 +37,12 @@ function score(model) {
     const haystack = (model.id + " " + model.name).toLowerCase();
     let points = 0;
 
+    // A router forwards each call to a different model, which defeats the
+    // point of choosing one. Never open on it.
+    if (model.isRouter || /\brouter\b/.test(haystack)) {
+        points -= 200;
+    }
+
     SPECIALIST_MARKERS.forEach(function (marker) {
         if (haystack.indexOf(marker) !== -1) {
             points -= 40;

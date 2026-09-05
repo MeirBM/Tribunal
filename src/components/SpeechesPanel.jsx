@@ -56,16 +56,28 @@ function SpeechBlock(props) {
                     ) : (
                         <Chip size="small" label="not delivered" color="error" variant="outlined" />
                     )}
+                    {speech.truncated ? (
+                        <Chip size="small" label="cut off" color="warning" variant="outlined" />
+                    ) : null}
                 </Stack>
             </AccordionSummary>
             <AccordionDetails>
                 {speech.ok ? (
-                    <Typography
-                        variant="body2"
-                        sx={{ whiteSpace: "pre-wrap", lineHeight: 1.7, maxWidth: "68ch" }}
-                    >
-                        {speech.text}
-                    </Typography>
+                    <Box>
+                        <Typography
+                            variant="body2"
+                            sx={{ whiteSpace: "pre-wrap", lineHeight: 1.7, maxWidth: "68ch" }}
+                        >
+                            {speech.text}
+                        </Typography>
+                        {speech.truncated ? (
+                            <Alert severity="warning" sx={{ mt: 1.5 }}>
+                                This speech reached its length limit and stops mid-sentence. The
+                                judges were told, so the abrupt ending was not read as the
+                                advocate's conclusion.
+                            </Alert>
+                        ) : null}
+                    </Box>
                 ) : (
                     <Alert severity="error">
                         This speech was never delivered: {speech.error} The judges were told the

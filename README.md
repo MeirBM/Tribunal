@@ -185,7 +185,7 @@ in it, so the rules can be read — and tested — without going through the UI.
 
 Built by a team of two.
 
-| Name             | GitHub | Worked on |
-|------------------|---|---|
-| *Meir Ben Moshe* | https://github.com/MeirBM| |
-| *Tal Almagor*    | | |
+| Name             | GitHub |
+|------------------|---|
+| *Meir Ben Moshe* | https://github.com/MeirBM |
+| *Tal Almagor*    | https://github.com/talmagor |

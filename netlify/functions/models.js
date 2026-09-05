@@ -71,9 +71,17 @@ export default async function handler() {
             if (promptPrice === null || completionPrice === null) {
                 return null;
             }
+            const architecture = entry.architecture || {};
             return {
                 id: entry.id,
                 name: entry.name || entry.id,
+                /*
+                 * A router is not a model. It forwards each call to whichever
+                 * free model happens to be available, so seven calls through
+                 * one router can reach seven different models - which is the
+                 * opposite of what arrangement A is supposed to hold fixed.
+                 */
+                isRouter: architecture.tokenizer === "Router",
                 contextLength: entry.context_length || 0,
                 promptPrice: promptPrice,
                 completionPrice: completionPrice,

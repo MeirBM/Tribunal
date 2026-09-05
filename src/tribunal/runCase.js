@@ -139,6 +139,7 @@ export async function runCase(options) {
                 modelId: models.speakerModel.id,
                 modelName: models.speakerModel.name,
                 ok: result.ok,
+                truncated: result.ok && result.finishReason === "length",
                 error: result.ok ? null : result.error,
                 promptTokens: result.ok ? result.usage.promptTokens : 0,
                 completionTokens: result.ok ? result.usage.completionTokens : 0,
@@ -149,6 +150,13 @@ export async function runCase(options) {
                 verdict: null
             });
 
+            /*
+             * A speech that filled its allowance stopped mid-sentence. It is
+             * still most of an argument, so it is kept rather than discarded -
+             * throwing it away would silence one side entirely - but it is
+             * marked, and the judges are told, so an abrupt ending is not read
+             * as the advocate's conclusion.
+             */
             return {
                 speakerId: speaker.id,
                 speakerName: speaker.name,
@@ -156,6 +164,7 @@ export async function runCase(options) {
                 role: speaker.role,
                 side: speaker.side,
                 ok: result.ok,
+                truncated: result.ok && result.finishReason === "length",
                 text: result.ok ? result.text.trim() : "",
                 error: result.ok ? null : result.error,
                 modelId: models.speakerModel.id,

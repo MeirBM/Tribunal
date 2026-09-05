@@ -210,6 +210,18 @@ export default function ArrangementDiagram(props) {
                 </Stack>
             </Stack>
 
+            {(speakerModel.isRouter || (judgeModel && judgeModel.isRouter)) ? (
+                <Typography
+                    variant="caption"
+                    sx={{ display: "block", mt: 1.5, lineHeight: 1.5, color: "error.main" }}
+                >
+                    A router was chosen, not a model. It forwards every call to whichever free
+                    model is free at that moment, so these seven calls can reach seven different
+                    models. Whatever this run shows, it is not a comparison between one model and
+                    two — pick a named model to make the arrangement mean anything.
+                </Typography>
+            ) : null}
+
             <Typography
                 variant="caption"
                 color="text.secondary"

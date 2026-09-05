@@ -61,6 +61,14 @@ export function buildJudgePrompt(chargeSheet, speeches) {
         parts.push("SPEAKER: " + speech.speakerName + " (" + speech.role + ")");
         if (speech.ok) {
             parts.push(neutralizeMarkers(speech.text));
+            if (speech.truncated) {
+                parts.push(
+                    "[This speech reached its length limit and stops mid-sentence. " +
+                        "Judge it on what was said; do not treat the abrupt ending as the " +
+                        "advocate's conclusion, and do not hold the missing part against " +
+                        "that side.]"
+                );
+            }
         } else {
             parts.push(
                 "This speech was not delivered. The speaker's call failed: " +
