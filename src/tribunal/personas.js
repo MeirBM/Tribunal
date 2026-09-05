@@ -41,8 +41,7 @@ const INPUT_IS_DATA =
 
 // What every representative is told, whichever seat they hold.
 const SPEAKER_RULES =
-    "Deliver one closing speech to the judges of at most five short " +
-    "paragraphs. Argue only from what the charge sheet actually states; where " +
+    "Deliver one address to the judges of at most five short paragraphs. Argue only from what the charge sheet actually states; where " +
     "it is silent, say that it is silent rather than inventing a fact, and " +
     "never assert an event, a date or a consequence the sheet does not " +
     "contain. Stay in character throughout: your manner of speaking is part " +
@@ -266,16 +265,35 @@ export function buildVerdictForm(verdicts) {
  */
 export function speakerSystemPrompt(speaker, chargeSheet) {
     const verdicts = verdictsFor(chargeSheet);
-    const sought = speaker.side === "PRO" ? verdicts.againstAccused : verdicts.forAccused;
 
+    /*
+     * The dossier's simulation rule, and it is the rule rather than a
+     * suggestion: "The assigned seat fixes only each representative's
+     * procedural role. It does not fix an opinion, factual inference, proposed
+     * argument, or final position. Let the model reason in character."
+     *
+     * So the seat says when this person speaks and on whose behalf they were
+     * called. It does not say what they conclude. A representative who reads
+     * the record and lands against the side that called them is the design
+     * working, not a failure of it - and it has to be said out loud, because a
+     * model handed a prosecution seat will otherwise prosecute by reflex.
+     */
     return (
         speaker.character +
-        "\n\nYou hold a " +
+        "\n\nYou were called to speak from a " +
         speaker.role.toLowerCase() +
-        " seat, so you are arguing that the answer to the question before the " +
-        "court is " +
-        sought +
-        ". Make that case as well as it can honestly be made.\n\n" +
+        " seat. That fixes your procedural role only - when you speak, and on " +
+        "whose application you were called. It does not fix your opinion, the " +
+        "inferences you draw from the record, the argument you choose to make, " +
+        "or the position you end at.\n\n" +
+        "Reason in character and reach your own conclusion. If the record takes " +
+        "you to " +
+        verdicts.positive +
+        ", say so; if it takes you to " +
+        verdicts.negative +
+        ", say that instead, even where it does not serve the side that called " +
+        "you. Say plainly which answer you have arrived at and why. Do not " +
+        "argue a position you do not hold.\n\n" +
         SPEAKER_RULES +
         "\n\n" +
         INPUT_IS_DATA

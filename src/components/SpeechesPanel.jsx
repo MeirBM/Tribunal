@@ -104,12 +104,13 @@ export default function SpeechesPanel(props) {
                 The four speeches
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Called at the same time, from the charge sheet alone. No speaker saw
-                another's speech.
+                Called at the same time, from the charge sheet alone. No representative
+                saw another's address. The seat says who called them, not what they
+                concluded — each reasons in character to their own answer.
             </Typography>
 
             <Typography variant="overline" sx={{ color: SIDE_COLORS.Prosecution }}>
-                For the prosecution
+                Called from the prosecution seats
             </Typography>
             <Stack gap={1} sx={{ mb: 2.5, mt: 0.5 }}>
                 {prosecution.map(function (speech) {
@@ -118,7 +119,7 @@ export default function SpeechesPanel(props) {
             </Stack>
 
             <Typography variant="overline" sx={{ color: SIDE_COLORS.Defence }}>
-                For the defence
+                Called from the defence seats
             </Typography>
             <Stack gap={1} sx={{ mt: 0.5 }}>
                 {defence.map(function (speech) {

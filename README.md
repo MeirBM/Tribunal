@@ -1,9 +1,10 @@
 # Tribunal — a multi-agent LLM court
 
-A charge sheet goes in. Four AI representatives argue it from two sides, three
-AI judges rule on it separately, and what comes out is **three verdicts kept
-side by side** — never merged into one — together with a protocol of how each
-judge reached its decision, and the token and cost report for the whole run.
+A charge sheet goes in. Four AI representatives address it from two seats,
+three AI judges rule on it separately, and what comes out is **three verdicts
+kept side by side** — never merged into one — together with a protocol of how
+each judge reached its decision, and the token and cost report for the whole
+run.
 
 ```
                     ┌── Daenerys Targaryen  prosecution seat
@@ -113,8 +114,22 @@ voices.
 | Judge | **The Elon model** | law as an inherited conversation, and a court whose authority has limits |
 | Judge | **The Shamgar model** | powers, duties and remedies identified before moral intuition is allowed to work |
 
-The deceased argues her own cause and the accused speaks in his own defence.
-That is the dossier's design and it is the sharpest thing about the case.
+The deceased was called from a prosecution seat and the accused from a defence
+seat. That is the dossier's design and it is the sharpest thing about the case.
+
+**A seat does not fix a position.** The dossier's simulation rule governs:
+
+> *"The assigned seat fixes only each representative's procedural role. It does
+> not fix an opinion, factual inference, proposed argument, or final position.
+> Let the model reason in character."*
+
+So each representative reasons in character and reaches its own conclusion, and
+one that lands against the side which called it is the design working rather
+than a failure of it. The prompt says so explicitly, because a model handed a
+prosecution seat will otherwise prosecute by reflex.
+
+Only the **judges** return a formal verdict. The representatives say where the
+record took them; the bench decides.
 
 **On the judges.** They are written as models of a *method*, and say so in
 their own prompts. The dossier is explicit that its profiles "adapt judicial
@@ -122,11 +137,6 @@ methods; they do not impersonate the judges or predict a real court", and two
 of the three jurists are real public figures. Each prompt describes how that
 method reasons, never what it should decide, so what divides the bench is a
 standard of judgement rather than an assigned outcome.
-
-A seat fixes which answer a representative argues for, and that follows the
-case: a prosecution seat argues **against the accused** whether the court is
-asking about guilt or about justification — which on T-001 means *not
-justified*, not *guilty*.
 
 ---
 

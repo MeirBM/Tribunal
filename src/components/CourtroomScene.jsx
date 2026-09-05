@@ -368,7 +368,7 @@ export default function CourtroomScene(props) {
                             variant="overline"
                             sx={{ color: SIDE_COLORS.Prosecution, fontSize: 10 }}
                         >
-                            For the prosecution
+                            Prosecution seats
                         </Typography>
                         <Stack direction="row" gap={1} sx={{ mt: 0.5 }}>
                             {prosecution.map(speakerFigure)}
@@ -389,7 +389,7 @@ export default function CourtroomScene(props) {
                             variant="overline"
                             sx={{ color: SIDE_COLORS.Defence, fontSize: 10 }}
                         >
-                            For the defence
+                            Defence seats
                         </Typography>
                         <Stack direction="row" gap={1} sx={{ mt: 0.5 }}>
                             {defence.map(speakerFigure)}
